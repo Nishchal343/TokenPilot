@@ -3,11 +3,11 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
-    Enum
+    Enum,
+    ForeignKey,
 )
 
 from sqlalchemy.sql import func
-
 
 from app.core.database import Base
 
@@ -18,11 +18,12 @@ from app.models.enums import (
 )
 
 
-
 class Invitation(Base):
     __tablename__ = "invitations"
 
     id = Column(Integer, primary_key=True)
+
+    name = Column(String(255), nullable=True)
 
     email = Column(
         String(255),
@@ -39,6 +40,8 @@ class Invitation(Base):
         Integer,
         nullable=False
     )
+
+    manager_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
 
     status = Column(
         Enum(InvitationStatus),
@@ -65,3 +68,7 @@ class Invitation(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    rejected_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)

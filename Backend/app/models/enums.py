@@ -10,6 +10,8 @@ class InvitationStatus(str, enum.Enum):
     pending = "pending"
     accepted = "accepted"
     rejected = "rejected"
+    expired = "expired"
+    cancelled = "cancelled"
 
 
 class InvitedByType(str, enum.Enum):
@@ -25,3 +27,4 @@ class OfferedRole(str, enum.Enum):
 class OTPPurpose(str, enum.Enum):
     register = "register"
     reset_password = "reset_password"
+    change_password = "change_password"

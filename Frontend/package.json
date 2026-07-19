@@ -1,0 +1,18 @@
+{
+  "name": "tokenpilot-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {"dev": "vite", "build": "vite build", "preview": "vite preview"},
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "axios": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest",
+    "recharts": "latest"
+  },
+  "devDependencies": {"@tailwindcss/postcss": "latest", "autoprefixer": "latest", "postcss": "latest", "tailwindcss": "latest", "vite": "latest"}
+}

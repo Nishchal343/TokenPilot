@@ -1,0 +1,1 @@
+export default function ErrorState({ error, onRetry }) { return <div className="empty-state"><div className="empty-icon">!</div><h3>Couldn’t load this view</h3><p>{error?.response?.data?.detail || 'Check your connection and try again.'}</p>{onRetry && <button className="button secondary" onClick={onRetry}>Retry</button>}</div> }

@@ -1,0 +1,71 @@
+==========================================
+TOKENPILOT FRONTEND AUDIT REPORT
+==========================================
+
+Audit Date: 2026-07-18
+
+Total Issues Found: 8
+
+Critical Issues: 1
+Medium Issues: 3
+Minor Issues: 4
+
+------------------------------------------
+DETAILED ISSUES
+------------------------------------------
+
+- File: Backend/app/routers/auth.py & Frontend/src/pages/Auth.jsx
+  Component: Auth
+  Description: The `/invite/accept` route passes `mode="invite"` to the `Auth` component. However, the `Auth` component does not have `'invite'` defined in its `messages` dictionary, resulting in a TypeError (cannot read properties of undefined reading '0') that completely crashes the application when an employee tries to accept an invitation.
+  Severity: Critical
+  Recommended Fix: Add an `'invite'` key-value pair to the `messages` object in `Auth.jsx` with appropriate title/subtitle, and retrieve the invitation token from URL query params.
+
+- File: Frontend/src/layouts/AppLayout.jsx
+  Component: AppLayout
+  Description: The sidebar navigation layout includes an "Invitations" link pointing to `/invitations` for the `company` role. However, there is no route for `/invitations` in the React Router setup (`App.jsx`), nor is there an `Invitations.jsx` page. Clicking this link hits the wildcard route and redirects to the landing page or dashboard, causing a broken user experience.
+  Severity: Medium
+  Recommended Fix: Remove the dead sidebar link since invitation actions are already handled via the modal in the `Organization` view, or implement a dedicated `/invitations` route and page.
+
+- File: Frontend/src/pages/Organization.jsx
+  Component: Organization (specifically the TreeNode subcomponent)
+  Description: The node actions button (`<MoreHorizontal />`) in the organization tree is a static button with no dropdown, onClick handler, or functionality. Although backend API endpoints for promoting/demoting employees and updating managers exist in the services file, they are never connected to the frontend UI.
+  Severity: Medium
+  Recommended Fix: Implement a dropdown menu or modal triggered by the tree node actions button to perform promotion, demotion, and manager reassignment API calls.
+
+- File: Frontend/src/pages/Dashboard.jsx
+  Component: Dashboard
+  Description: The "Token consumption" panel displays a static placeholder: "Analytics will appear once activity is detected." There is no actual chart library integrated or usage history rendering, leaving this dashboard panel non-functional regardless of the presence of data.
+  Severity: Medium
+  Recommended Fix: Integrate a lightweight charting library (such as Recharts or Chart.js) and plot the actual token consumption trend using backend analytics.
+
+- File: Frontend/src/pages/Organization.jsx
+  Component: Organization
+  Description: The loading conditional check `if(!tree) return <Loading/>` will never evaluate to true because the state is initialized as an empty array `[]` (which is truthy). This causes the screen to briefly show an empty state ("No matches found") instead of a proper loading state before the API finishes loading the data.
+  Severity: Minor
+  Recommended Fix: Initialize `tree` state as `null` (`const [tree, setTree] = useState(null)`) so that the loading check functions correctly.
+
+- File: Frontend/src/pages/Dashboard.jsx
+  Component: Dashboard
+  Description: The invitation activity panel shows numeric summary counts but features a static list placeholder ("Invitation history will appear here.") instead of rendering details of recent invitations, which the backend already returns in the `recent_invitations` key of the dashboard API.
+  Severity: Minor
+  Recommended Fix: Map and render the `data.recent_invitations` array inside the dashboard's invitation panel.
+
+- File: Frontend/index.html & Frontend/src/App.jsx
+  Component: Main Shell
+  Description: The project lacks meta description tags for SEO, has no link tag for a favicon, and does not dynamically update the document title based on the active route, keeping it hardcoded as "TokenPilot - AI Spend Intelligence".
+  Severity: Minor
+  Recommended Fix: Add a favicon link and meta tags to `index.html`, and update the page titles dynamically on route change using a custom hook or dynamic React component.
+
+- File: Frontend/src/pages/Budgets.jsx
+  Component: Budgets
+  Description: The user documentation states that Team Leads (Managers) can manage budgets for direct reports. However, the backend `/token-budgets/{employee_id}` endpoint requires `get_current_company` (admin permissions). This results in a permissions discrepancy, and the frontend currently limits editing exclusively to `company` admins.
+  Severity: Minor
+  Recommended Fix: Align the permissions (either update backend to allow manager updates of descendants, or correct documentation to clarify that budgets are read-only for Team Leads).
+
+------------------------------------------
+READINESS SCORES
+------------------------------------------
+
+Production Readiness Score: 35/100
+
+Interview Readiness Score: 45/100

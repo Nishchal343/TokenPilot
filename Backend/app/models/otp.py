@@ -47,6 +47,12 @@ class OTP(Base):
         default=False
     )
 
+    attempts = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()

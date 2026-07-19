@@ -12,6 +12,7 @@ class EmployeeRegisterRequest(BaseModel):
     confirm_password: str
 
 
+
 class EmployeeVerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str = Field(..., min_length=6, max_length=6)
@@ -41,6 +42,7 @@ class EmployeeResponse(BaseModel):
     role: EmployeeRole | None
     company_id: int | None
     invited_by_id: int | None
+    manager_id: int | None
     created_at: datetime
 
     model_config = {

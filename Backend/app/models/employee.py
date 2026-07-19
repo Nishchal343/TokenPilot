@@ -48,10 +48,29 @@ class Employee(Base):
         nullable=True
     )
 
+    manager_id = Column(
+        Integer,
+        ForeignKey("employees.id"),
+        nullable=True,
+        index=True,
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()
     )
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Profile fields
+    phone = Column(String(50), nullable=True)
+    address = Column(String(500), nullable=True)
+    city = Column(String(100), nullable=True)
+    state = Column(String(100), nullable=True)
+    country = Column(String(100), nullable=True)
+    postal_code = Column(String(20), nullable=True)
+    avatar_url = Column(String(500), nullable=True)
+    department = Column(String(100), nullable=True)
+    designation = Column(String(100), nullable=True)
 
     company = relationship(
         "Company",
@@ -60,5 +79,25 @@ class Employee(Base):
 
     invited_by = relationship(
         "Employee",
-        remote_side=[id]
+        remote_side=[id],
+        foreign_keys=[invited_by_id],
+    )
+
+    manager = relationship(
+        "Employee",
+        remote_side=[id],
+        foreign_keys=[manager_id],
+        back_populates="subordinates",
+    )
+
+    subordinates = relationship(
+        "Employee",
+        foreign_keys=[manager_id],
+        back_populates="manager",
+    )
+
+    notifications = relationship(
+        "Notification",
+        back_populates="employee",
+        cascade="all, delete-orphan",
     )
