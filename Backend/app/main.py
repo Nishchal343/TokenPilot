@@ -13,6 +13,7 @@ from app.routers.profile import router as profile_router
 from app.routers.settings import router as settings_router
 from app.routers.security import router as security_router
 from app.routers.support import router as support_router
+from app.routers.api_key_requests import router as api_key_requests_router
 
 setup_logging()
 
@@ -36,6 +37,7 @@ app.include_router(profile_router)
 app.include_router(settings_router)
 app.include_router(security_router)
 app.include_router(support_router)
+app.include_router(api_key_requests_router)
 
 
 @app.get("/")

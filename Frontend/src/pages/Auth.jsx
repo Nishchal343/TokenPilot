@@ -104,11 +104,11 @@ export default function Auth({ mode = 'login' }) {
           showToast('success', '✓ Email verified successfully. Welcome to TokenPilot!')
           setTimeout(() => { 
             login(response, form.email)
-            nav(kind === 'company' ? '/dashboard/company' : '/dashboard/employee', { replace: true }) 
+            nav(kind === 'company' ? '/dashboard/company' : '/dashboard/member', { replace: true })
           }, 900)
         } else {
           login(response, form.email)
-          nav(kind === 'company' ? '/dashboard/company' : '/dashboard/employee', { replace: true })
+          nav(kind === 'company' ? '/dashboard/company' : '/dashboard/member', { replace: true })
         }
       } else {
         if (mode === 'forgot') {

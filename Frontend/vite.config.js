@@ -3,15 +3,17 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  appType: 'spa',
   server: {
     port: 5173,
     proxy: {
-      '^/(auth|dashboard|organization|token-budgets|notifications|invitations|profile|settings|security|support|uploads)': {
+      '^/(auth|api|dashboard|organization|token-budgets|notifications|invitations|profile|settings|security|support|uploads)': {
         // Pin the proxy to IPv4. On Windows, `localhost` can resolve to ::1
         // while uvicorn is listening on 127.0.0.1, causing ECONNREFUSED.
         target: 'http://127.0.0.1:8000',
         bypass: (req, res, proxyOptions) => {
-          if (req.headers.accept && req.headers.accept.indexOf('html') !== -1) {
+          const browserRoute = /^\/dashboard\/(company\/(teams|budget-approval|invitations|ai-workspace)|team-leader\/(my-team|team-budget|ai-workspace)|member\/(requests|ai-workspace))/.test(req.url || '')
+          if (browserRoute || (req.headers.accept && req.headers.accept.indexOf('html') !== -1)) {
             return '/index.html'
           }
         }

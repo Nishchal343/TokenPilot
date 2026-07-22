@@ -1,16 +1,11 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Network, Sparkles, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut, Sparkles } from 'lucide-react'
 import Logo from '../components/Logo'
 import NotificationBell from '../components/NotificationBell'
 import ProfileDropdown from '../components/ProfileDropdown'
 import { useAuth } from '../contexts/AuthContext'
-
-const links = {
-  company: [['Dashboard', '/dashboard/company', LayoutDashboard], ['Organization', '/organization', Network], ['Budgets', '/budgets', CircleDollarSign], ['Invitations', '/invitations', Users]],
-  manager: [['Dashboard', '/dashboard/team-lead', LayoutDashboard], ['My team', '/organization', Network], ['Team budgets', '/budgets', CircleDollarSign]],
-  employee: [['Dashboard', '/dashboard/employee', LayoutDashboard], ['My organization', '/organization', Network], ['My budget', '/budgets', CircleDollarSign]]
-}
+import { navigationByRole } from '../config/navigation'
 
 export default function AppLayout() {
   const { user, profile, logout } = useAuth()
@@ -22,26 +17,38 @@ export default function AppLayout() {
       <aside className="sidebar">
         <div className="sidebar-top">
           <Logo compact={collapsed}/>
-          <button className="collapse" onClick={() => setCollapsed(!collapsed)}>
+          <button
+            className="collapse"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
             {collapsed ? <ChevronRight size={16}/> : <ChevronLeft size={16}/>}
           </button>
         </div>
         
-        <div className="workspace">
-          <span className="workspace-mark">{user?.type === 'company' ? 'C' : user?.role === 'manager' ? 'M' : 'E'}</span>
-          {!collapsed && (
+        {!collapsed && (
+          <div className="workspace">
+            <span className="workspace-mark">{user?.type === 'company' ? 'C' : user?.role === 'manager' ? 'M' : 'E'}</span>
             <span>
               <b>{user?.type === 'company' ? 'Company workspace' : 'Team workspace'}</b>
               <small>{user?.role || 'admin'}</small>
             </span>
-          )}
-        </div>
+          </div>
+        )}
         
         <nav>
-          {links[kind].map(([label, path, Icon]) => (
-            <NavLink key={path} to={path} className={({isActive}) => isActive ? 'active' : ''}>
+          {navigationByRole[kind].map(({ label, path, Icon }) => (
+            <NavLink
+              key={path}
+              to={path}
+              end={path === navigationByRole[kind][0].path}
+              className={({isActive}) => isActive ? 'active' : ''}
+              aria-label={label}
+              title={collapsed ? label : undefined}
+            >
               <Icon size={18}/>
-              <span>{label}</span>
+              {!collapsed && <span>{label}</span>}
             </NavLink>
           ))}
         </nav>
@@ -54,9 +61,9 @@ export default function AppLayout() {
               <small>Connect your future AI stack.</small>
             </div>
           )}
-          <button className="nav-button" onClick={() => logout()}>
+          <button className="nav-button" onClick={() => logout()} aria-label="Sign out" title={collapsed ? 'Sign out' : undefined}>
             <LogOut size={18}/>
-            <span>Sign out</span>
+            {!collapsed && <span>Sign out</span>}
           </button>
         </div>
       </aside>

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
 
     FRONTEND_URL: str
+    API_KEY_ENCRYPTION_KEY: str | None = None
 
     class Config:
         env_file = ".env"

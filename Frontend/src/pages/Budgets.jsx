@@ -1,27 +1,68 @@
 import { useEffect, useState } from 'react'
-import { CircleDollarSign, RotateCcw, Save } from 'lucide-react'
-import { budgetApi } from '../services/api'
+import { Check, CircleDollarSign, Eye, KeyRound, X } from 'lucide-react'
+import { apiKeyRequestApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
-import { formatCurrency } from '../utils/formatters'
-import PreOrganizationOnboarding from '../components/PreOrganizationOnboarding'
+
+const statusLabels = { PENDING_COMPANY: 'Pending Company Approval', APPROVED: 'Approved', REJECTED: 'Rejected' }
 
 export default function Budgets() {
-  const { user } = useAuth(); const company = user?.type === 'company'; const manager = user?.role === 'manager'; const [items, setItems] = useState(null); const [error, setError] = useState('')
-  const preOrganization = user?.type === 'employee' && !user?.company_id
-  const { showToast } = useToast()
-  const load = () => { const fn = company ? budgetApi.company : manager ? budgetApi.team : budgetApi.me; fn().then(r => setItems(Array.isArray(r.data) ? r.data : [r.data])).catch(e => setError(e.response?.data?.detail || 'Unable to load budgets.')) }
-  useEffect(() => { if (!preOrganization) load() }, [preOrganization])
-  const update = (id, monthly_limit) => (manager ? budgetApi.teamUpdate(id, { monthly_limit: Number(monthly_limit) }) : budgetApi.update(id, { monthly_limit: Number(monthly_limit) })).then(() => { showToast('success', 'Budget limit updated successfully.'); load() }).catch(e => showToast('error', e.response?.data?.detail || 'Unable to update budget.'))
-  if (preOrganization) return <PreOrganizationOnboarding variant="budget" />
-  if (!items) return error ? <div className="empty-state">{error}</div> : <Loading/>
-  const total = sum(items, 'monthly_limit')
-  const managerBudget = manager ? items.find(item => item.employee_id === user.id) : null
-  const teamMembers = manager ? items.filter(item => item.employee_id !== user.id) : []
-  return <div className="dashboard"><div className="page-heading"><div><div className="eyebrow">TOKEN GOVERNANCE</div><h1>{manager ? 'Team budgets.' : 'Budget control.'}</h1><p className="muted">{manager ? 'Allocate budgets only within your assigned team.' : 'Keep AI usage intentional, visible, and ready to scale.'}</p></div>{company && <button className="button secondary" onClick={() => budgetApi.reset().then(() => { showToast('success', 'Monthly token usage has been reset.'); load() }).catch(e => showToast('error', e.response?.data?.detail || 'Unable to reset token usage.'))}><RotateCcw size={16}/> Reset monthly usage</button>}</div>{manager && <div className="stats-grid"><Stat label="Allocated Team Budget" value={managerBudget ? compact(managerBudget.monthly_limit) : '—'} /><Stat label="Budget Used" value={managerBudget ? compact(managerBudget.used_tokens) : '—'} /><Stat label="Remaining Budget" value={managerBudget ? compact(managerBudget.remaining_tokens) : '—'} /><Stat label="Total Employees" value={teamMembers.length} /></div>}<div className="budget-hero"><div><span className="muted">{company ? 'Organization allocation' : manager ? 'Team allocation' : 'Your allocation'}</span><strong>{total == null ? 'No data available yet' : compact(total)} <small>tokens / month</small></strong></div><CircleDollarSign size={34}/></div><section className="panel table-panel"><div className="panel-head"><h3>{company ? 'All organization budgets' : manager ? 'Assigned team budgets' : 'My budget'}</h3><span className="muted">{items.length || 'No'} {items.length === 1 ? 'member' : 'members'}</span></div>{items.length ? <div className="table-wrap"><table><thead><tr><th>Member</th><th>Monthly limit</th><th>Used</th><th>Remaining</th><th>Requests</th><th>Cost</th>{(company || manager) && <th/>}</tr></thead><tbody>{items.map(x => <tr key={x.id}><td><span className="table-person"><span className="avatar small">{String(x.employee_id).slice(-1)}</span><b>Employee #{x.employee_id}{manager && x.employee_id === user.id ? ' (You)' : ''}</b></span></td><td>{(company || (manager && x.employee_id !== user.id)) ? <input className="inline-input" type="number" defaultValue={x.monthly_limit ?? ''} placeholder="Not set" onBlur={e => e.target.value && update(x.employee_id, e.target.value)}/> : display(x.monthly_limit, compact)}</td><td>{display(x.used_tokens, compact)}</td><td><span className="positive">{display(x.remaining_tokens, compact)}</span></td><td>{display(x.total_requests)}</td><td>{display(x.estimated_cost, formatCurrency)}</td>{(company || manager) && <td><Save size={15} className="muted"/></td>}</tr>)}</tbody></table></div> : <div className="empty-state"><h3>No budgets available yet</h3><p>Assign a budget to see token usage and cost data here.</p></div>}</section></div>
+  const { user } = useAuth()
+  return user?.type === 'company' ? <CompanyApprovalCenter /> : <TeamLeaderRequests />
 }
-function Stat({ label, value }) { return <div className="stat-card"><div><span className="muted">{label}</span><strong>{value}</strong></div></div> }
-const display = (value, formatter = value => value) => value == null ? '—' : formatter(value)
-const sum = (items, field) => items.some(item => typeof item?.[field] === 'number') ? items.reduce((total, item) => total + (typeof item?.[field] === 'number' ? item[field] : 0), 0) : null
-const compact = n => Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(n))
+
+function TeamLeaderRequests() {
+  const { showToast } = useToast()
+  const [requests, setRequests] = useState(null)
+  const [error, setError] = useState('')
+  const [budgets, setBudgets] = useState({})
+  const [details, setDetails] = useState(null)
+  const [working, setWorking] = useState(null)
+
+  const load = () => apiKeyRequestApi.teamLeader().then(response => setRequests(Array.isArray(response.data) ? response.data : [])).catch(err => setError(err.response?.data?.detail || 'Unable to load pending requests.'))
+  useEffect(() => { load() }, [])
+
+  const action = (request, type) => {
+    const reason = type === 'reject' ? window.prompt('Rejection reason is required:') : undefined
+    if (type === 'reject' && !reason?.trim()) return
+    setWorking(request.id)
+    apiKeyRequestApi.teamLeaderAction(request.id, { action: type, modified_budget: Number(budgets[request.id] || request.requested_budget), reason })
+      .then(() => { showToast('success', type === 'approve' ? 'Request advanced to company approval.' : 'Request rejected.'); load() })
+      .catch(err => showToast('error', err.response?.data?.detail || 'Unable to update request.'))
+      .finally(() => setWorking(null))
+  }
+
+  if (!requests) return error ? <div className="empty-state">{error}</div> : <Loading />
+  return <div className="dashboard">
+    <div className="page-heading"><div><div className="eyebrow">TEAM GOVERNANCE</div><h1>Pending API Requests</h1><p className="muted">Review and budget AI access requests from your team.</p></div></div>
+    <section className="panel table-panel approval-panel">{requests.length ? <div className="table-wrap"><table><thead><tr><th>Employee</th><th>Tier</th><th>Model</th><th>Requested Budget</th><th>Current Status</th><th>Actions</th></tr></thead><tbody>{requests.map(request => <tr key={request.id}><td><b>{request.employee_name || `Employee #${request.employee_id}`}</b></td><td>{request.requested_tier}</td><td>{request.requested_model}</td><td><input className="inline-input" type="number" min="1" value={budgets[request.id] ?? request.requested_budget} onChange={e => setBudgets({ ...budgets, [request.id]: e.target.value })}/></td><td><span className="status-pill">{request.status}</span></td><td><div className="approval-actions"><button className="icon-button" title="View Details" onClick={() => setDetails(details === request.id ? null : request.id)}><Eye size={15}/></button><button className="button primary compact-button" disabled={working === request.id} onClick={() => action(request, 'approve')}><Check size={14}/> Approve</button><button className="button secondary compact-button" disabled={working === request.id} onClick={() => action(request, 'reject')}><X size={14}/> Reject</button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><div className="empty-icon"><CircleDollarSign size={22}/></div><h3>No pending requests</h3><p>New team member API requests will appear here.</p></div>}{details && (() => { const request = requests.find(item => item.id === details); return request ? <div className="request-detail"><b>Reason</b><p>{request.reason}</p><span className="muted">Requested on {new Date(request.created_at).toLocaleString()}</span></div> : null })()}</section>
+  </div>
+}
+
+function CompanyApprovalCenter() {
+  const { showToast } = useToast()
+  const [requests, setRequests] = useState(null)
+  const [error, setError] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [form, setForm] = useState({ provider: 'OpenAI', api_key: '', final_budget: '' })
+  const [working, setWorking] = useState(null)
+
+  const load = () => apiKeyRequestApi.companyRequests().then(response => setRequests(Array.isArray(response.data) ? response.data : [])).catch(err => setError(err.response?.data?.detail || 'Unable to load API key requests.'))
+  useEffect(() => { load() }, [])
+
+  const approve = request => {
+    setWorking(request.id)
+    apiKeyRequestApi.companyAction(request.id, { action: 'approve', provider: form.provider, api_key: form.api_key, final_budget: Number(form.final_budget || request.leader_modified_budget || request.requested_budget) })
+      .then(() => { showToast('success', 'API key activated and access granted.'); setSelected(null); setForm({ provider: 'OpenAI', api_key: '', final_budget: '' }); load() })
+      .catch(err => showToast('error', err.response?.data?.detail || 'Unable to approve request.'))
+      .finally(() => setWorking(null))
+  }
+  const reject = request => { const reason = window.prompt('Rejection reason is required:'); if (!reason?.trim()) return; setWorking(request.id); apiKeyRequestApi.companyAction(request.id, { action: 'reject', reason }).then(() => { showToast('success', 'Request rejected.'); load() }).catch(err => showToast('error', err.response?.data?.detail || 'Unable to reject request.')).finally(() => setWorking(null)) }
+
+  if (!requests) return error ? <div className="empty-state">{error}</div> : <Loading />
+  return <div className="dashboard">
+    <div className="page-heading"><div><div className="eyebrow">COMPANY GOVERNANCE</div><h1>API Key Approval Center</h1><p className="muted">Activate governed AI access after team leader review.</p></div></div>
+    <section className="panel table-panel approval-panel">{requests.length ? <div className="table-wrap"><table><thead><tr><th>Employee</th><th>Team Leader</th><th>Tier</th><th>Model</th><th>Leader Budget</th><th>Status</th><th>Actions</th></tr></thead><tbody>{requests.map(request => <tr key={request.id}><td>{request.employee_name || `Employee #${request.employee_id}`}</td><td>{request.team_leader_name || `Leader #${request.team_leader_id}`}</td><td>{request.requested_tier}</td><td>{request.requested_model}</td><td>{request.leader_modified_budget || request.requested_budget}</td><td><span className={`status-pill ${request.status === 'APPROVED' ? 'approved' : request.status === 'REJECTED' ? 'rejected' : ''}`}>{statusLabels[request.status] || request.status}</span></td><td>{request.status === 'PENDING_COMPANY' ? <button className="button primary compact-button" onClick={() => { setSelected(request.id); setForm({ provider: 'OpenAI', api_key: '', final_budget: String(request.leader_modified_budget || request.requested_budget) }) }}><KeyRound size={14}/> Review</button> : <span className="muted">Complete</span>}</td></tr>)}</tbody></table></div> : <div className="empty-state"><div className="empty-icon"><KeyRound size={22}/></div><h3>No requests awaiting approval</h3><p>Team leader-approved requests will appear here.</p></div>}{selected && (() => { const request = requests.find(item => item.id === selected); return request ? <div className="approval-editor"><div className="panel-head"><h3>Activate {request.requested_model} access</h3><button className="icon-button" onClick={() => setSelected(null)}><X size={16}/></button></div><div className="form-grid"><label className="field"><span>Provider</span><select value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })}>{['OpenAI', 'Gemini', 'Claude', 'Groq', 'Azure OpenAI', 'OpenRouter', 'Other'].map(provider => <option key={provider}>{provider}</option>)}</select></label><label className="field"><span>API Key</span><input required type="password" value={form.api_key} onChange={e => setForm({ ...form, api_key: e.target.value })} placeholder="Stored encrypted" /></label><label className="field"><span>Final Budget</span><input required min="1" type="number" value={form.final_budget} onChange={e => setForm({ ...form, final_budget: e.target.value })}/></label></div><div className="form-actions"><button className="button secondary" onClick={() => reject(request)} disabled={working === request.id}>Reject</button><button className="button primary" onClick={() => approve(request)} disabled={working === request.id}><Check size={15}/> Approve & Activate</button></div></div> : null })()}</section>
+  </div>
+}

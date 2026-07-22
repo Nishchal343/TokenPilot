@@ -19,6 +19,16 @@ export const authApi = {
   forgot: (kind, p) => api.post(`/auth/${kind}/forgot-password`, p), reset: (kind, p) => api.post(`/auth/${kind}/reset-password`, p)
 }
 export const dashboardApi = { company: () => api.get('/dashboard/company'), manager: () => api.get('/dashboard/team-lead'), employee: () => api.get('/dashboard/employee') }
+export const apiKeyRequestApi = {
+  create: payload => api.post('/api/requests', payload),
+  mine: () => api.get('/api/requests/my'),
+  teamLeader: () => api.get('/api/teamleader/requests'),
+  teamLeaderAction: (id, payload) => api.patch(`/api/teamleader/requests/${id}`, payload),
+  companyRequests: () => api.get('/api/company/api-key-requests'),
+  companyAction: (id, payload) => api.patch(`/api/company/api-key-requests/${id}`, payload),
+  createKey: payload => api.post('/api/company/api-keys', payload),
+  companyKeys: () => api.get('/api/company/api-keys')
+}
 export const organizationApi = {
   tree: () => api.get('/organization/tree'),
   me: () => api.get('/organization/me'),

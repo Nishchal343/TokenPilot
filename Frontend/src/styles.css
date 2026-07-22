@@ -389,6 +389,57 @@
 .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
 .screenshot-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; padding-top: 16px; border-top: 1px solid #1e2535; }
+.coming-soon { text-align: center; }
+.coming-soon .empty-icon { width: 64px; height: 64px; margin-bottom: 20px; border-radius: 18px; }
+.coming-soon h1 { margin: 12px 0 8px; font-size: 30px; letter-spacing: -1px; }
+.coming-soon h2 { margin: 0 0 12px; color: #b09dff; font-size: 18px; }
+.coming-soon p { max-width: 440px; margin: 0 auto 24px; color: #8b95aa; line-height: 1.7; font-size: 13px; }
+.request-form-panel { padding: 24px; margin-bottom: 18px; }
+.request-history .panel-head h3 { display: flex; align-items: center; gap: 8px; }
+.request-status.approved { color: #62e6b3; border-color: #35d49a55; }
+.request-status.rejected, .status-pill.rejected { color: #ff9eae; border-color: #ff597855; }
+.status-pill.approved { color: #62e6b3; border-color: #35d49a55; }
+.approval-panel { overflow: hidden; }
+.approval-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.compact-button { padding: 7px 9px; font-size: 11px; }
+.request-detail { margin: 18px 20px 8px; padding: 16px; border: 1px solid #293247; border-radius: 10px; background: #111622; }
+.request-detail p { margin: 8px 0; color: #a5afc2; line-height: 1.6; font-size: 12px; }
+.approval-editor { margin: 20px; padding: 20px; border: 1px solid #55429b66; border-radius: 12px; background: linear-gradient(145deg,#1c1935,#121621); }
+.approval-editor .panel-head { padding: 0 0 14px; }
+.teams-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.team-card { overflow: hidden; }
+.team-card-head { display: flex; align-items: center; gap: 12px; padding: 20px; border-bottom: 1px solid #202737; }
+.team-card-head h3 { margin: 0 0 4px; font-size: 15px; }
+.team-card-head p { margin: 0; color: #778399; font-size: 11px; }
+.team-card-head .role-chip { margin-left: auto; white-space: nowrap; }
+.team-members-head { padding: 14px 20px 4px; color: #8993aa; font-size: 11px; }
+.team-members-head span { display: inline-flex; align-items: center; gap: 7px; }
+.team-member-list { padding: 0 20px 10px; }
+.team-member-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid #202737; }
+.team-member-row > span:nth-child(2) { flex: 1; min-width: 0; }
+.team-member-row b, .team-member-row small { display: block; }
+.team-member-row b { font-size: 12px; }
+.team-member-row small { margin-top: 3px; color: #778399; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+@media(max-width:900px) { .teams-grid { grid-template-columns: 1fr; } }
+@media(max-width:800px) { .approval-actions { flex-wrap: wrap; } .approval-panel table { min-width: 860px; } }
+
+/* App sidebar collapse behavior */
+.app-shell { min-width: 0; }
+.app-shell .sidebar { width: 272px; min-width: 0; overflow: hidden; transition: width 300ms ease, padding 300ms ease; }
+.app-shell.collapsed .sidebar { width: 76px; padding-left: 8px; padding-right: 8px; }
+.sidebar-top, .sidebar nav, .sidebar-bottom { min-width: 0; width: 100%; }
+.sidebar nav a, .sidebar .nav-button { min-width: 0; width: 100%; overflow: hidden; white-space: nowrap; }
+.sidebar nav a > svg, .sidebar .nav-button > svg { flex: 0 0 18px; }
+.app-shell.collapsed .sidebar-top { justify-content: center; padding-left: 0; padding-right: 0; }
+.app-shell.collapsed .sidebar nav a, .app-shell.collapsed .sidebar .nav-button { justify-content: center; gap: 0; padding-left: 0; padding-right: 0; }
+.app-shell.collapsed .sidebar nav a.active { box-shadow: none; }
+.app-shell.collapsed .sidebar nav a { position: relative; }
+.app-shell.collapsed .sidebar nav a.active::before { content: ''; position: absolute; left: 3px; width: 2px; height: 18px; border-radius: 2px; background: #9b7bff; }
+.main { min-width: 0; overflow: hidden; }
+
+@media(max-width:900px) {
+  .app-shell .sidebar, .app-shell.collapsed .sidebar { width: 76px; padding-left: 8px; padding-right: 8px; }
+}
 
 /* ===== RESPONSIVE ===== */
 @media(max-width:900px) {

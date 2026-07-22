@@ -50,7 +50,7 @@ export default function Organization() {
     setError(null)
     try {
       const response = await (isManager ? organizationApi.teamMembers() : organizationApi.members())
-      setMembers(response.data)
+      setMembers(Array.isArray(response.data) ? response.data : [])
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.detail || 'Failed to load organization members.')
@@ -70,8 +70,8 @@ export default function Organization() {
     
     // 1. Search
     let result = members.filter(m => 
-      m.name.toLowerCase().includes(query.toLowerCase()) || 
-      m.email.toLowerCase().includes(query.toLowerCase()) ||
+      (m.name || '').toLowerCase().includes(query.toLowerCase()) ||
+      (m.email || '').toLowerCase().includes(query.toLowerCase()) ||
       (m.department && m.department.toLowerCase().includes(query.toLowerCase())) ||
       (m.designation && m.designation.toLowerCase().includes(query.toLowerCase()))
     )
@@ -86,8 +86,8 @@ export default function Organization() {
       let aVal = a[sortField] || ''
       let bVal = b[sortField] || ''
       if (sortField === 'name') {
-        aVal = a.name.toLowerCase()
-        bVal = b.name.toLowerCase()
+        aVal = (a.name || '').toLowerCase()
+        bVal = (b.name || '').toLowerCase()
       }
       if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
       if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1

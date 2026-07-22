@@ -12,6 +12,7 @@ const Landing = lazy(() => import('./pages/Landing'))
 const Auth = lazy(() => import('./pages/Auth'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Organization = lazy(() => import('./pages/Organization'))
+const Teams = lazy(() => import('./pages/Teams'))
 const Budgets = lazy(() => import('./pages/Budgets'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Settings = lazy(() => import('./pages/Settings'))
@@ -21,6 +22,8 @@ const HelpCenter = lazy(() => import('./pages/HelpCenter'))
 const Documentation = lazy(() => import('./pages/Documentation'))
 const Invitations = lazy(() => import('./pages/Invitations'))
 const InvitationAccept = lazy(() => import('./pages/InvitationAccept'))
+const Requests = lazy(() => import('./pages/Requests'))
+const ComingSoon = lazy(() => import('./components/ComingSoon'))
 
 function Home() { const {isAuthenticated,user,initialized}=useAuth(); if (!initialized) return <Loading/>; return <Navigate to={isAuthenticated?roleHome(user):'/home'} replace/> }
 function HomeRoute() { const {isAuthenticated,user,initialized}=useAuth(); if (!initialized) return <Loading/>; if (isAuthenticated) return <Navigate to={roleHome(user)} replace/>; return <Landing/> }
@@ -44,8 +47,23 @@ export default function App() {
       <Route element={<ProtectedRoute/>}>
         <Route element={<AppLayout/>}>
           <Route path="/dashboard/company" element={<Role role="company"><Dashboard type="company"/></Role>}/>
-          <Route path="/dashboard/team-lead" element={<Role role="manager"><Dashboard type="manager"/></Role>}/>
-          <Route path="/dashboard/employee" element={<Role role="employee"><Dashboard type="employee"/></Role>}/>
+          <Route path="/dashboard/company/teams" element={<Role role="company"><Teams/></Role>}/>
+          <Route path="/dashboard/company/budget-approval" element={<Role role="company"><Budgets/></Role>}/>
+          <Route path="/dashboard/company/invitations" element={<Role role="company"><Invitations/></Role>}/>
+          <Route path="/dashboard/company/ai-workspace" element={<Role role="company"><ComingSoon title="AI Workspace"/></Role>}/>
+
+          <Route path="/dashboard/team-leader" element={<Role role="manager"><Dashboard type="manager"/></Role>}/>
+          <Route path="/dashboard/team-leader/my-team" element={<Role role="manager"><Organization/></Role>}/>
+          <Route path="/dashboard/team-leader/team-budget" element={<Role role="manager"><Budgets/></Role>}/>
+          <Route path="/dashboard/team-leader/ai-workspace" element={<Role role="manager"><ComingSoon title="AI Workspace"/></Role>}/>
+
+          <Route path="/dashboard/member" element={<Role role="employee"><Dashboard type="employee"/></Role>}/>
+          <Route path="/dashboard/member/requests" element={<Role role="employee"><Requests/></Role>}/>
+          <Route path="/dashboard/member/ai-workspace" element={<Role role="employee"><ComingSoon title="AI Workspace"/></Role>}/>
+
+          {/* Legacy dashboard URLs remain valid and redirect through the role guard. */}
+          <Route path="/dashboard/team-lead" element={<Role role="manager"><Navigate to="/dashboard/team-leader" replace/></Role>}/>
+          <Route path="/dashboard/employee" element={<Role role="employee"><Navigate to="/dashboard/member" replace/></Role>}/>
           <Route path="/organization" element={<Organization/>}/>
           <Route path="/budgets" element={<Budgets/>}/>
           <Route path="/invitations" element={<Invitations/>}/>

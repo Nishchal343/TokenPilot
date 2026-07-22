@@ -107,4 +107,4 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ token, user, profile, isAuthenticated: !!user, initialized, login, logout, fetchProfile, refreshOrganization, authApi }}>{children}</AuthContext.Provider>
 }
 export const useAuth = () => useContext(AuthContext)
-export const roleHome = user => user?.type === 'company' ? '/dashboard/company' : user?.role === 'manager' ? '/dashboard/team-lead' : '/dashboard/employee'
+export const roleHome = user => user?.type === 'company' ? '/dashboard/company' : user?.role === 'manager' ? '/dashboard/team-leader' : '/dashboard/member'
