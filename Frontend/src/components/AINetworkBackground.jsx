@@ -34,6 +34,8 @@ export default function AINetworkBackground() {
       'rgba(81, 210, 189, 0.45)'    // #51d2bd (cyan/teal/turquoise)
     ]
 
+    const wrap = (value, limit) => ((value % limit) + limit) % limit
+
     const init = () => {
       width = canvas.width = canvas.offsetWidth
       height = canvas.height = canvas.offsetHeight
@@ -61,7 +63,7 @@ export default function AINetworkBackground() {
           x: Math.random() * width,
           y: Math.random() * height,
           vx: (Math.random() - 0.5) * (prefersReducedMotion ? 0.02 : 0.12),
-          vy: -Math.random() * (prefersReducedMotion ? 0.05 : 0.25) - 0.05,
+          vy: (Math.random() - 0.5) * (prefersReducedMotion ? 0.1 : 0.5),
           radius: Math.random() * 1 + 0.5,
           alpha: Math.random() * 0.2 + 0.1
         })
@@ -125,9 +127,8 @@ export default function AINetworkBackground() {
         if (!prefersReducedMotion) {
           p.x += p.vx
           p.y += p.vy
-          if (p.x < 0) p.x = width
-          if (p.x > width) p.x = 0
-          if (p.y < 0) p.y = height
+          p.x = wrap(p.x, width)
+          p.y = wrap(p.y, height)
         }
         ctx.beginPath()
         ctx.arc(p.x + mouse.x * 0.5, p.y + mouse.y * 0.5, p.radius, 0, Math.PI * 2)
@@ -138,12 +139,21 @@ export default function AINetworkBackground() {
       for (const node of nodes) {
         if (!prefersReducedMotion) {
           node.x += node.vx
-          node.y += node.y < 0 || node.y > height ? -node.vy : node.vy
-          node.x += node.x < 0 || node.x > width ? -node.vx : node.vx
-          if (node.x < 0) node.x = 0
-          if (node.x > width) node.x = width
-          if (node.y < 0) node.y = 0
-          if (node.y > height) node.y = height
+          node.y += node.vy
+          if (node.x < 0) {
+            node.x = 0
+            node.vx = Math.abs(node.vx)
+          } else if (node.x > width) {
+            node.x = width
+            node.vx = -Math.abs(node.vx)
+          }
+          if (node.y < 0) {
+            node.y = 0
+            node.vy = Math.abs(node.vy)
+          } else if (node.y > height) {
+            node.y = height
+            node.vy = -Math.abs(node.vy)
+          }
         }
 
         node.pulsePhase += node.pulseSpeed
