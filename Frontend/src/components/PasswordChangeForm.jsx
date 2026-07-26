@@ -3,7 +3,7 @@ import { Eye, EyeOff, Key, Lock, RefreshCw, ShieldCheck, X } from 'lucide-react'
 import { settingsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 
-export default function PasswordChangeForm() {
+export default function PasswordChangeForm({ showHeader = true }) {
   const { showToast } = useToast()
   const [form, setForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [otp, setOtp] = useState('')
@@ -72,10 +72,10 @@ export default function PasswordChangeForm() {
 
   return <>
     <div className="panel settings-panel">
-      <div className="panel-head">
+      {showHeader && <div className="panel-head">
         <div><span className="muted">Password security</span><h3>Change Password</h3></div>
         <Lock size={18} className="muted" />
-      </div>
+      </div>}
       <form onSubmit={requestOtp} className="settings-form">
         <PasswordField label="Current Password" name="current_password" value={form.current_password} onChange={update} show={show.current} onToggle={() => toggle('current')} />
         <PasswordField label="New Password" name="new_password" value={form.new_password} onChange={update} show={show.new} onToggle={() => toggle('new')} />

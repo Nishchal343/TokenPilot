@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth, roleHome } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -26,7 +26,23 @@ const Requests = lazy(() => import('./pages/Requests'))
 const ComingSoon = lazy(() => import('./components/ComingSoon'))
 
 function Home() { const {isAuthenticated,user,initialized}=useAuth(); if (!initialized) return <Loading/>; return <Navigate to={isAuthenticated?roleHome(user):'/home'} replace/> }
-function HomeRoute() { const {isAuthenticated,user,initialized}=useAuth(); if (!initialized) return <Loading/>; if (isAuthenticated) return <Navigate to={roleHome(user)} replace/>; return <Landing/> }
+function HomeRoute() {
+  const { isAuthenticated, user, initialized } = useAuth()
+
+  useEffect(() => {
+    if (!initialized || isAuthenticated) return undefined
+
+    const lockHome = () => window.history.pushState({ tokenpilotHome: true }, '', '/home')
+    window.history.replaceState({ tokenpilotHome: true }, '', '/home')
+    window.history.pushState({ tokenpilotHome: true }, '', '/home')
+    window.addEventListener('popstate', lockHome)
+    return () => window.removeEventListener('popstate', lockHome)
+  }, [initialized, isAuthenticated])
+
+  if (!initialized) return <Loading/>
+  if (isAuthenticated) return <Navigate to={roleHome(user)} replace/>
+  return <Landing/>
+}
 
 export default function App() {
   return (

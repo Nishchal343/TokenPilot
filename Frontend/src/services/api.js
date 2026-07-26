@@ -58,7 +58,7 @@ export const invitationApi = {
   accept: p => api.post('/invitations/accept', p),
   reject: p => api.post('/invitations/reject', p)
 }
-export const notificationApi = { list: () => api.get('/notifications'), read: id => api.patch(`/notifications/${id}/read`), readAll: () => api.post('/notifications/read-all'), delete: id => api.delete(`/notifications/${id}`) }
+export const notificationApi = { list: (params = {}) => api.get('/notifications', { params }), read: id => api.patch(`/notifications/${id}/read`), readAll: () => api.post('/notifications/read-all') }
 export const profileApi = { get: () => api.get('/profile'), update: p => api.patch('/profile', p), uploadAvatar: f => { const fd = new FormData(); fd.append('file', f); return api.post('/profile/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } }) }, deleteAvatar: () => api.delete('/profile/avatar') }
 export const settingsApi = { changePassword: p => api.post('/settings/change-password/request', p), changePasswordVerify: p => api.post('/settings/change-password/verify', p) }
 export const securityApi = { info: () => api.get('/security/info') }

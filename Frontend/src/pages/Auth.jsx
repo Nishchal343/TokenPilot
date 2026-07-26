@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
 const messages = { 
-  login: ['Welcome back', 'Sign in to your workspace.'], 
+  login: ['Welcome back', 'Sign in to your account.'], 
   register: ['Create your workspace', 'Start making every token work harder.'], 
   verify: ['Verify your email', 'We’ve sent a 6-digit verification code to your email address.'], 
   forgot: ['Reset your password', 'We’ll send a verification code to your email.'], 
@@ -44,6 +44,15 @@ export default function Auth({ mode = 'login' }) {
       showToast('success', loc.state.successMessage)
     }
   }, [mode, loc.state])
+
+  useEffect(() => {
+    if (mode !== 'login') return undefined
+    const goHomeOnBack = () => {
+      if (window.location.pathname !== '/home') nav('/home', { replace: true })
+    }
+    window.addEventListener('popstate', goHomeOnBack)
+    return () => window.removeEventListener('popstate', goHomeOnBack)
+  }, [mode, nav])
 
   const resendOtp = async () => {
     setLoading(true)
@@ -169,7 +178,7 @@ export default function Auth({ mode = 'login' }) {
           {['login', 'register'].includes(mode) && (
             <div className="segmented">
               <button type="button" className={kind === 'company' ? 'selected' : ''} onClick={() => setKind('company')}>Company</button>
-              <button type="button" className={kind === 'employee' ? 'selected' : ''} onClick={() => setKind('employee')}>Employee</button>
+              <button type="button" className={kind === 'employee' ? 'selected' : ''} onClick={() => setKind('employee')}>Individual</button>
             </div>
           )}
 

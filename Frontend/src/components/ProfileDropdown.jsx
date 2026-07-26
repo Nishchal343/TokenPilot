@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, BookOpen, Bug, HelpCircle, LogOut, Settings, Shield, User } from 'lucide-react'
+import { Bell, BookOpen, Bug, HelpCircle, LogOut, Shield, User } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import BugReportModal from './BugReportModal'
 
@@ -25,7 +25,6 @@ export default function ProfileDropdown() {
 
   const links = [
     { icon: <User size={15}/>, label: 'Profile', path: '/profile' },
-    { icon: <Settings size={15}/>, label: 'Settings', path: '/settings' },
     { icon: <Bell size={15}/>, label: 'Notifications', path: '/notifications' },
     { icon: <Shield size={15}/>, label: 'Security', path: '/security' },
   ]

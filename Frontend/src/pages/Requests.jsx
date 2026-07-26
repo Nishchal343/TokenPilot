@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { ClipboardList, Send } from 'lucide-react'
 import { apiKeyRequestApi } from '../services/api'
+import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
 
 const initialForm = { requested_tier: 'MEDIUM', requested_model: '', requested_budget: '', reason: '' }
 const statusLabels = {
-  PENDING_TEAM_LEADER: 'Pending Team Leader Approval',
-  PENDING_COMPANY: 'Pending Company Approval',
+  PENDING_TEAM_LEADER: 'Pending Approval',
+  PENDING_COMPANY: 'Pending Approval',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
-  REJECTED_BY_TEAM_LEADER: 'Rejected by Team Leader'
+  REJECTED_BY_TEAM_LEADER: 'Rejected'
 }
 
 export default function Requests() {
@@ -47,6 +48,6 @@ export default function Requests() {
         <div className="form-actions"><button className="button primary" disabled={submitting}>{submitting ? 'Submitting...' : <><Send size={16}/> Submit Request</>}</button></div>
       </form>
     </section>
-    <section className="panel table-panel request-history"><div className="panel-head"><h3><ClipboardList size={17}/> Submitted Requests</h3></div>{requests.length ? <div className="table-wrap"><table><thead><tr><th>Status</th><th>Requested Model</th><th>Budget</th><th>Current Stage</th><th>Submission Date</th></tr></thead><tbody>{requests.map(request => <tr key={request.id}><td><span className={`status-pill request-status ${request.status === 'APPROVED' ? 'approved' : request.status.includes('REJECTED') ? 'rejected' : ''}`}>{statusLabels[request.status] || request.status}</span></td><td>{request.requested_model}</td><td>{request.company_final_budget || request.leader_modified_budget || request.requested_budget}</td><td>{request.status === 'APPROVED' ? 'Access active' : request.status.includes('REJECTED') ? request.rejection_reason : statusLabels[request.status]}</td><td>{new Date(request.created_at).toLocaleDateString()}</td></tr>)}</tbody></table></div> : <div className="empty-state"><div className="empty-icon"><ClipboardList size={22}/></div><h3>No requests yet</h3><p>Your submitted requests will appear here.</p></div>}</section>
+    <section className="panel table-panel request-history"><div className="panel-head"><h3><ClipboardList size={17}/> Submitted Requests</h3></div>{requests.length ? <div className="table-wrap"><table><thead><tr><th>Status</th><th>Requested Model</th><th>Budget</th><th>Current Stage</th><th>Submission Date</th></tr></thead><tbody>{requests.map(request => <tr key={request.id}><td><StatusBadge status={request.status}/></td><td>{request.requested_model}</td><td>{request.company_final_budget || request.leader_modified_budget || request.requested_budget}</td><td>{request.status === 'APPROVED' ? 'Access active' : request.status.includes('REJECTED') ? request.rejection_reason : statusLabels[request.status]}</td><td>{new Date(request.created_at).toLocaleDateString()}</td></tr>)}</tbody></table></div> : <div className="empty-state"><div className="empty-icon"><ClipboardList size={22}/></div><h3>No requests yet</h3><p>Your submitted requests will appear here.</p></div>}</section>
   </div>
 }

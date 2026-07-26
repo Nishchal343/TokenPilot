@@ -36,6 +36,17 @@ const FAQ_SECTIONS = [
     ],
   },
   {
+    section: 'Token Optimization',
+    items: [
+      ['What is token optimization?', 'Token optimization helps reduce unnecessary AI token consumption by identifying inefficient prompts, redundant requests, and opportunities to improve prompt design while maintaining response quality.'],
+      ['How does TokenPilot reduce AI costs?', 'TokenPilot analyzes AI usage patterns, highlights excessive token consumption, recommends prompt improvements, and provides usage insights that help organizations lower overall AI spending.'],
+      ['Can TokenPilot identify inefficient prompts?', 'Yes. TokenPilot detects prompts that consume more tokens than necessary and provides recommendations to improve efficiency without sacrificing output quality.'],
+      ['Does token optimization affect AI response quality?', 'No. TokenPilot focuses on eliminating unnecessary token usage while preserving the quality and accuracy of AI responses.'],
+      ['Which AI providers are supported?', 'TokenPilot is designed to work across multiple AI providers and models, giving organizations a unified view of token usage, budgets, and optimization opportunities.'],
+      ['How can I monitor token usage?', 'Use the Usage Analytics dashboard to track token consumption, request history, usage trends, and optimization opportunities across your organization.'],
+    ],
+  },
+  {
     section: 'Usage Tracking',
     items: [
       ['What AI models are tracked?', 'TokenPilot tracks GPT, Gemini, Claude, and other model requests through the token budget system.'],

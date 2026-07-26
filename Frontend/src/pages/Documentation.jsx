@@ -26,6 +26,10 @@ const DOCS = [
     content: `Token budgets define the maximum number of AI tokens a user may consume per month. Company admins set budgets for all employees. Team leads can manage budgets for their direct reports. Budgets track: monthly limit, used tokens, remaining tokens, total AI requests, and estimated cost.`
   },
   {
+    title: 'Token Optimization',
+    content: `Token Optimization helps organizations reduce unnecessary AI token consumption while maintaining response quality. TokenPilot analyzes prompt efficiency, identifies token-heavy requests, highlights optimization opportunities, and provides actionable recommendations to lower AI costs. Administrators can monitor token usage trends, compare consumption across teams and models, detect inefficient prompts, and improve overall AI spending through intelligent analytics.\n\nKey Features\n\nâ€¢ Monitor token consumption across teams and AI models.\nâ€¢ Detect inefficient prompts and excessive token usage.\nâ€¢ Receive optimization recommendations to reduce AI costs.\nâ€¢ Track token savings over time through analytics.\nâ€¢ Compare token usage across users, teams, and AI providers.\nâ€¢ Optimize AI spending without compromising response quality.`
+  },
+  {
     title: 'Notifications',
     content: `Notifications inform employees of important workspace events including: invitation accepted/rejected, budget updates, token limit changes, password changes, and system messages. Notifications can be marked as read individually or all at once. They can also be deleted.`
   },

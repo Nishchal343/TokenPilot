@@ -103,9 +103,7 @@ async def report_bug(
     )
 
     if not email_sent:
-        logger.error("Failed to send bug report email for %s", reporter_email)
-        # We still saved to DB, but inform user
-        raise HTTPException(status_code=500, detail="Bug report logged, but failed to send email notification.")
+        logger.warning("Bug report saved, but email notification failed for %s", reporter_email)
 
     logger.info("Bug report submitted successfully by %s: %s", reporter_email, subject)
     return {"message": "Bug report submitted successfully. Thank you for your feedback!"}

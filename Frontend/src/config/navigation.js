@@ -1,17 +1,20 @@
-import { CircleDollarSign, LayoutDashboard, Network, Sparkles, Users, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Network, Sparkles, Users, ClipboardList } from 'lucide-react'
+import { createElement } from 'react'
+
+const RupeeIcon = ({ size = 18 }) => createElement('span', { 'aria-hidden': true, style: { fontSize: size, lineHeight: 1, fontWeight: 700 } }, '₹')
 
 export const navigationByRole = {
   company: [
     { label: 'Dashboard', path: '/dashboard/company', Icon: LayoutDashboard },
     { label: 'Teams', path: '/dashboard/company/teams', Icon: Network },
-    { label: 'Budget Approval', path: '/dashboard/company/budget-approval', Icon: CircleDollarSign },
+    { label: 'Budget Approval', path: '/dashboard/company/budget-approval', Icon: RupeeIcon },
     { label: 'Invitations', path: '/dashboard/company/invitations', Icon: Users },
     { label: 'AI Workspace', path: '/dashboard/company/ai-workspace', Icon: Sparkles }
   ],
   manager: [
     { label: 'Dashboard', path: '/dashboard/team-leader', Icon: LayoutDashboard },
     { label: 'My Team', path: '/dashboard/team-leader/my-team', Icon: Network },
-    { label: 'Team Budget', path: '/dashboard/team-leader/team-budget', Icon: CircleDollarSign },
+    { label: 'Team Budget', path: '/dashboard/team-leader/team-budget', Icon: RupeeIcon },
     { label: 'AI Workspace', path: '/dashboard/team-leader/ai-workspace', Icon: Sparkles }
   ],
   employee: [

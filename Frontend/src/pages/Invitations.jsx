@@ -15,6 +15,7 @@ import { invitationApi, organizationApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
+import StatusBadge from '../components/StatusBadge'
 
 export default function Invitations() {
   const { user } = useAuth()
@@ -170,7 +171,7 @@ export default function Invitations() {
         <>
           {/* Status filter buttons/tabs */}
           <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #202737', paddingBottom: '12px', marginBottom: '20px', overflowX: 'auto' }}>
-            {['all', 'pending', 'accepted', 'rejected', 'expired', 'cancelled'].map(status => {
+            {['all', 'pending', 'accepted', 'rejected'].map(status => {
               const count = invites ? invites.filter(item => status === 'all' || item.status === status).length : 0
               return (
                 <button
@@ -249,11 +250,7 @@ export default function Invitations() {
                             )}
                           </td>
                           <td>
-                            {item.status === 'pending' && <span className="status-pill" style={{ color: '#ffbd79', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }}>Pending</span>}
-                            {item.status === 'accepted' && <span className="status-pill" style={{ color: '#6be4b6', background: 'rgba(53, 212, 154, 0.08)', borderColor: 'rgba(53, 212, 154, 0.25)' }}>Accepted</span>}
-                            {item.status === 'rejected' && <span className="status-pill" style={{ color: '#ff7a95', background: 'rgba(255, 89, 120, 0.08)', borderColor: 'rgba(255, 89, 120, 0.25)' }}>Rejected</span>}
-                            {item.status === 'expired' && <span className="status-pill" style={{ color: '#8b95aa', background: 'rgba(139, 149, 170, 0.08)', borderColor: 'rgba(139, 149, 170, 0.25)' }}>Expired</span>}
-                            {item.status === 'cancelled' && <span className="status-pill" style={{ color: '#ff7a95', background: 'rgba(255, 89, 120, 0.08)', borderColor: 'rgba(255, 89, 120, 0.25)' }}>Cancelled</span>}
+                            <StatusBadge status={item.status}/>
                           </td>
                           <td>
                             <small className="muted">

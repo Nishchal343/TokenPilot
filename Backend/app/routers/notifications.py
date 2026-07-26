@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -18,11 +19,27 @@ def _get_employee_id(payload: dict) -> int | None:
 
 
 @router.get("", response_model=list[NotificationResponse])
-def get_my_notifications(db: Session = Depends(get_db), payload: dict = Depends(get_current_token_payload)):
+def get_my_notifications(
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    is_read: bool | None = Query(None),
+    type: str | None = Query(None),
+    search: str | None = Query(None),
+    db: Session = Depends(get_db),
+    payload: dict = Depends(get_current_token_payload),
+):
     employee_id = _get_employee_id(payload)
     if not employee_id:
         return []
-    return db.query(Notification).filter(Notification.employee_id == employee_id).order_by(Notification.created_at.desc()).all()
+    query = db.query(Notification).filter(Notification.employee_id == employee_id)
+    if is_read is not None:
+        query = query.filter(Notification.is_read == is_read)
+    if type:
+        query = query.filter(Notification.type == type)
+    if search:
+        pattern = f"%{search.strip()}%"
+        query = query.filter(or_(Notification.title.ilike(pattern), Notification.message.ilike(pattern)))
+    return query.order_by(Notification.created_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.patch("/{notification_id}/read", response_model=MessageResponse)

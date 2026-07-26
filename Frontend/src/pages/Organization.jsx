@@ -171,35 +171,6 @@ export default function Organization() {
                 onChange={e => setQuery(e.target.value)}
               />
             </div>
-            
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <select 
-                className="inline-input" 
-                value={roleFilter} 
-                onChange={e => setRoleFilter(e.target.value)}
-                style={{ width: '150px', background: '#141925', height: '40px', borderRadius: '10px', borderColor: '#252d3e', padding: '0 12px' }}
-              >
-                <option value="all">All Roles</option>
-                <option value="manager">Managers</option>
-                <option value="employee">Employees</option>
-              </select>
-
-              <select 
-                className="inline-input" 
-                value={`${sortField}-${sortOrder}`} 
-                onChange={e => {
-                  const [field, order] = e.target.value.split('-')
-                  setSortField(field)
-                  setSortOrder(order)
-                }}
-                style={{ width: '170px', background: '#141925', height: '40px', borderRadius: '10px', borderColor: '#252d3e', padding: '0 12px' }}
-              >
-                <option value="name-asc">Name (A-Z)</option>
-                <option value="name-desc">Name (Z-A)</option>
-                <option value="created_at-desc">Newest Joined</option>
-                <option value="created_at-asc">Oldest Joined</option>
-              </select>
-            </div>
           </div>
 
           {/* Members Table */}
@@ -268,12 +239,12 @@ export default function Organization() {
                           </td>
                           <td>
                             <small className="muted">
-                              {m.created_at ? new Date(m.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
+                              {m.created_at ? new Date(m.created_at).toLocaleString(undefined, { dateStyle: 'medium' }) : '—'}
                             </small>
                           </td>
                           <td>
                             <small className="muted">
-                              {m.last_login_at ? new Date(m.last_login_at).toLocaleDateString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                              {m.last_login_at ? new Date(m.last_login_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                             </small>
                           </td>
                           <td>
@@ -573,13 +544,13 @@ function MemberDetailModal({ member, onClose }) {
           <div>
             <span className="muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Member Since</span>
             <strong style={{ display: 'block', fontSize: '13px', marginTop: '3px' }}>
-              {member.created_at ? new Date(member.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
+              {member.created_at ? new Date(member.created_at).toLocaleString(undefined, { dateStyle: 'medium' }) : '—'}
             </strong>
           </div>
           <div>
             <span className="muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Last Login</span>
             <strong style={{ display: 'block', fontSize: '13px', marginTop: '3px' }}>
-              {member.last_login_at ? new Date(member.last_login_at).toLocaleDateString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'}
+              {member.last_login_at ? new Date(member.last_login_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'}
             </strong>
           </div>
         </div>

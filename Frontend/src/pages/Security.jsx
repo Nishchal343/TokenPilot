@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, Clock, Shield, User, XCircle } from 'lucide-react'
+import { CheckCircle, ChevronDown, Clock, Lock, Shield, User, XCircle } from 'lucide-react'
 import { securityApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
@@ -21,6 +21,8 @@ export default function Security() {
   const { showToast } = useToast()
   const [info, setInfo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [activityExpanded, setActivityExpanded] = useState(false)
 
   useEffect(() => {
     securityApi.info()
@@ -42,10 +44,16 @@ export default function Security() {
       </div>
 
       <div className="security-layout">
-        <PasswordChangeForm />
+        <div className={`security-password${passwordOpen ? ' is-open' : ''}`}>
+          <button type="button" className="panel security-password-toggle" onClick={() => setPasswordOpen(open => !open)} aria-expanded={passwordOpen}>
+            <span><span className="muted">Password security</span><strong>Change Password</strong><small>Update your account password securely.</small></span>
+            <span className="security-password-icon"><Lock size={18}/><ChevronDown className="security-password-chevron" size={16}/></span>
+          </button>
+          <div className="security-password-content"><PasswordChangeForm showHeader={false}/></div>
+        </div>
 
         {/* Account info card */}
-        <div className="panel">
+        <div className="panel security-account-overview">
           <h3>Account Overview</h3>
           <div className="security-grid">
             <SecRow icon={<User size={16}/>} label="Email" value={info.email}/>
@@ -68,13 +76,16 @@ export default function Security() {
             <p className="muted">No recent activity recorded.</p>
           ) : (
             <div className="login-history">
-              {info.recent_logins.map((log, i) => (
+              {info.recent_logins.slice(0, activityExpanded ? 10 : 3).map((log, i) => (
                 <div key={i} className="login-row">
                   <span className="login-event">{EVENT_LABELS[log.event_type] || log.event_type}</span>
                   <span className="muted">{log.ip_address || '—'}</span>
                   <span className="muted">{fmtDate(log.created_at)}</span>
                 </div>
               ))}
+              {info.recent_logins.length > 3 && <button type="button" className="button secondary security-activity-toggle" onClick={() => setActivityExpanded(expanded => !expanded)}>
+                {activityExpanded ? 'Show Less' : 'View More'}
+              </button>}
             </div>
           )}
         </div>
