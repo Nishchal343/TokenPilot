@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, LogOut, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
 import Logo from '../components/Logo'
 import NotificationBell from '../components/NotificationBell'
 import ProfileDropdown from '../components/ProfileDropdown'
 import { useAuth } from '../contexts/AuthContext'
 import { navigationByRole } from '../config/navigation'
+import './sidebar-utilities.css'
 
 export default function AppLayout() {
   const { user, profile, logout } = useAuth()
@@ -25,6 +26,11 @@ export default function AppLayout() {
           >
             {collapsed ? <ChevronRight size={16}/> : <ChevronLeft size={16}/>}
           </button>
+        </div>
+
+        <div className="sidebar-utilities">
+          <NotificationBell/>
+          <ProfileDropdown />
         </div>
         
         {!collapsed && (
@@ -54,13 +60,6 @@ export default function AppLayout() {
         </nav>
         
         <div className="sidebar-bottom">
-          {!collapsed && (
-            <div className="upgrade">
-              <Sparkles size={17}/>
-              <b>AI spend, clarified.</b>
-              <small>Connect your future AI stack.</small>
-            </div>
-          )}
           <button className="nav-button" onClick={() => logout()} aria-label="Sign out" title={collapsed ? 'Sign out' : undefined}>
             <LogOut size={18}/>
             {!collapsed && <span>Sign out</span>}
@@ -69,13 +68,6 @@ export default function AppLayout() {
       </aside>
       
       <main className="main">
-        <div className="dashboard-top-bar">
-          <div className="top-actions">
-            <NotificationBell/>
-            <ProfileDropdown />
-          </div>
-        </div>
-        
         <div className="content">
           <Outlet/>
         </div>

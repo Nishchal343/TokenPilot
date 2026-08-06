@@ -1,0 +1,130 @@
+/* Keep the chat inside the dashboard viewport. Only its two content panes scroll. */
+.tp-chat-app:not(.embedded) {
+  height: calc(100dvh - 150px);
+  max-height: calc(100dvh - 150px);
+  min-height: 0;
+}
+
+.tp-chat-app:not(.embedded),
+.tp-chat-main,
+.tp-conversation-sidebar,
+.tp-conversations,
+.tp-chat-body {
+  min-height: 0;
+}
+
+.tp-conversation-sidebar {
+  overflow: hidden;
+}
+
+.tp-conversations,
+.tp-chat-body {
+  overscroll-behavior: contain;
+}
+
+.tp-conversations {
+  overflow-y: auto;
+}
+
+@media (max-width: 700px) {
+  .tp-chat-app:not(.embedded) {
+    height: calc(100dvh - 110px);
+    max-height: calc(100dvh - 110px);
+  }
+}
+
+/* Give the conversation more presence while keeping the composer compact. */
+.tp-chat-app:not(.embedded) {
+  width: 100%;
+  height: calc(100dvh - 76px);
+  max-height: calc(100dvh - 76px);
+}
+
+.content:has(.tp-chat-app:not(.embedded)) {
+  max-width: none;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.tp-chat-header > section > button:first-of-type {
+  display: none;
+}
+
+.tp-message-list,
+.tp-chat-error,
+.tp-composer-wrap {
+  max-width: 980px;
+}
+
+.tp-message-list {
+  padding-top: 42px;
+  padding-bottom: 24px;
+}
+
+.tp-markdown {
+  font-size: 15px;
+}
+
+.tp-conversation b {
+  font-size: 12px;
+}
+
+.tp-composer-wrap {
+  margin: 0 auto;
+  padding-top: 4px;
+  padding-bottom: 12px;
+}
+
+.tp-composer {
+  padding: 8px 11px 6px;
+}
+
+.tp-composer textarea {
+  min-height: 34px;
+  max-height: 130px;
+  font-size: 13px;
+}
+
+.tp-composer {
+  position: relative;
+  min-height: 52px;
+  padding: 9px 48px 8px 11px;
+}
+
+.tp-composer textarea {
+  min-height: 34px;
+  max-height: 96px;
+}
+
+.tp-composer footer > span {
+  display: none;
+}
+
+.tp-composer footer {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+}
+
+.tp-composer footer button {
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+}
+
+.tp-message-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
+.tp-message-actions button.selected {
+  color: #b9a8ff;
+  background: #8b5cf626;
+}
+
+@media (max-width: 700px) {
+  .tp-chat-app:not(.embedded) {
+    height: calc(100dvh - 110px);
+    max-height: calc(100dvh - 110px);
+  }
+}

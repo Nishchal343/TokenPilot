@@ -7,3 +7,4 @@ from .token_budget import TokenBudget
 from .security_log import SecurityLog
 from .bug_report import BugReport
 from .api_key_request import APIKeyRequest, APIKey, APIKeyAuditLog
+from .workspace import ChatSession, ChatMessage, WorkspaceFile, WorkspaceFolder, PersonalAPIKey

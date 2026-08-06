@@ -4,6 +4,9 @@ export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '', t
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('tokenpilot_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  if (config.url?.includes('/messages') && config.data?.content && window.tokenpilotWorkspaceContext) {
+    config.data = { ...config.data, content: `${config.data.content}\n\nWorkspace context:\n${window.tokenpilotWorkspaceContext}` }
+  }
   return config
 })
 api.interceptors.response.use(r => r, error => {
@@ -28,6 +31,11 @@ export const apiKeyRequestApi = {
   companyAction: (id, payload) => api.patch(`/api/company/api-key-requests/${id}`, payload),
   createKey: payload => api.post('/api/company/api-keys', payload),
   companyKeys: () => api.get('/api/company/api-keys')
+}
+export const workspaceApi = {
+  connection: () => api.get('/workspace/connection'), connections: () => api.get('/workspace/connections'), personalKeys: () => api.get('/workspace/personal-keys'), personalKey: p => api.post('/workspace/personal-key', p), updatePersonalKey: (id, p) => api.patch(`/workspace/personal-keys/${id}`, p), deletePersonalKey: id => api.delete(`/workspace/personal-keys/${id}`),
+  chats: q => api.get('/workspace/chats', { params: q ? { q } : {} }), createChat: () => api.post('/workspace/chats'), chat: id => api.get(`/workspace/chats/${id}`), renameChat: (id, p) => api.patch(`/workspace/chats/${id}`, p), deleteChat: id => api.delete(`/workspace/chats/${id}`), send: (id, p) => api.post(`/workspace/chats/${id}/messages`, p, { timeout: 180000 }),
+  files: () => api.get('/workspace/files'), createFile: p => api.post('/workspace/files', p), updateFile: (id, p) => api.patch(`/workspace/files/${id}`, p), deleteFile: id => api.delete(`/workspace/files/${id}`)
 }
 export const organizationApi = {
   tree: () => api.get('/organization/tree'),

@@ -23,7 +23,9 @@ const Documentation = lazy(() => import('./pages/Documentation'))
 const Invitations = lazy(() => import('./pages/Invitations'))
 const InvitationAccept = lazy(() => import('./pages/InvitationAccept'))
 const Requests = lazy(() => import('./pages/Requests'))
-const ComingSoon = lazy(() => import('./components/ComingSoon'))
+const AIWorkspace = lazy(() => import('./pages/AIWorkspace'))
+const AIChat = lazy(() => import('./pages/AIChat'))
+const AIIDE = lazy(() => import('./pages/AIIDE'))
 
 function Home() { const {isAuthenticated,user,initialized}=useAuth(); if (!initialized) return <Loading/>; return <Navigate to={isAuthenticated?roleHome(user):'/home'} replace/> }
 function HomeRoute() {
@@ -66,16 +68,22 @@ export default function App() {
           <Route path="/dashboard/company/teams" element={<Role role="company"><Teams/></Role>}/>
           <Route path="/dashboard/company/budget-approval" element={<Role role="company"><Budgets/></Role>}/>
           <Route path="/dashboard/company/invitations" element={<Role role="company"><Invitations/></Role>}/>
-          <Route path="/dashboard/company/ai-workspace" element={<Role role="company"><ComingSoon title="AI Workspace"/></Role>}/>
+          <Route path="/dashboard/company/ai-workspace" element={<Role role="company"><AIWorkspace/></Role>}/>
+          <Route path="/dashboard/company/ai-workspace/chat" element={<Role role="company"><AIChat/></Role>}/>
+          <Route path="/dashboard/company/ai-workspace/ide" element={<Role role="company"><AIIDE/></Role>}/>
 
           <Route path="/dashboard/team-leader" element={<Role role="manager"><Dashboard type="manager"/></Role>}/>
           <Route path="/dashboard/team-leader/my-team" element={<Role role="manager"><Organization/></Role>}/>
           <Route path="/dashboard/team-leader/team-budget" element={<Role role="manager"><Budgets/></Role>}/>
-          <Route path="/dashboard/team-leader/ai-workspace" element={<Role role="manager"><ComingSoon title="AI Workspace"/></Role>}/>
+          <Route path="/dashboard/team-leader/ai-workspace" element={<Role role="manager"><AIWorkspace/></Role>}/>
+          <Route path="/dashboard/team-leader/ai-workspace/chat" element={<Role role="manager"><AIChat/></Role>}/>
+          <Route path="/dashboard/team-leader/ai-workspace/ide" element={<Role role="manager"><AIIDE/></Role>}/>
 
           <Route path="/dashboard/member" element={<Role role="employee"><Dashboard type="employee"/></Role>}/>
           <Route path="/dashboard/member/requests" element={<Role role="employee"><Requests/></Role>}/>
-          <Route path="/dashboard/member/ai-workspace" element={<Role role="employee"><ComingSoon title="AI Workspace"/></Role>}/>
+          <Route path="/dashboard/member/ai-workspace" element={<Role role="employee"><AIWorkspace/></Role>}/>
+          <Route path="/dashboard/member/ai-workspace/chat" element={<Role role="employee"><AIChat/></Role>}/>
+          <Route path="/dashboard/member/ai-workspace/ide" element={<Role role="employee"><AIIDE/></Role>}/>
 
           {/* Legacy dashboard URLs remain valid and redirect through the role guard. */}
           <Route path="/dashboard/team-lead" element={<Role role="manager"><Navigate to="/dashboard/team-leader" replace/></Role>}/>

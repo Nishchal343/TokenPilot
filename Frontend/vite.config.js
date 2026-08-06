@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '^/(auth|api|dashboard|organization|token-budgets|notifications|invitations|profile|settings|security|support|uploads)': {
+      '^/(auth|api|dashboard|organization|token-budgets|notifications|invitations|profile|settings|security|support|workspace|uploads)': {
         // Pin the proxy to IPv4. On Windows, `localhost` can resolve to ::1
         // while uvicorn is listening on 127.0.0.1, causing ECONNREFUSED.
         target: 'http://127.0.0.1:8000',

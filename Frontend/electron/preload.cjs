@@ -1,0 +1,7 @@
+const { contextBridge, ipcRenderer } = require('electron')
+contextBridge.exposeInMainWorld('tokenpilotDesktop', {
+  workspace: {
+    open: () => ipcRenderer.invoke('workspace:open'), tree: () => ipcRenderer.invoke('workspace:tree'), read: path => ipcRenderer.invoke('workspace:read', path), write: (path, content) => ipcRenderer.invoke('workspace:write', path, content), createFile: (path, content = '') => ipcRenderer.invoke('workspace:createFile', path, content), createFolder: path => ipcRenderer.invoke('workspace:createFolder', path), rename: (from, to) => ipcRenderer.invoke('workspace:rename', from, to), remove: path => ipcRenderer.invoke('workspace:remove', path), move: (from, to) => ipcRenderer.invoke('workspace:move', from, to), recent: () => ipcRenderer.invoke('workspace:recent'), onChanged: callback => { const listener = (_event, payload) => callback(payload); ipcRenderer.on('workspace:changed', listener); return () => ipcRenderer.removeListener('workspace:changed', listener) }
+  },
+  terminal: { create: () => ipcRenderer.invoke('terminal:create'), execute: (id, command) => ipcRenderer.invoke('terminal:execute', id, command), write: (id, input) => ipcRenderer.send('terminal:write', id, input), resize: (id, cols, rows) => ipcRenderer.send('terminal:resize', id, cols, rows), close: id => ipcRenderer.send('terminal:close', id), onData: callback => { const listener = (_event, payload) => callback(payload); ipcRenderer.on('terminal:data', listener); return () => ipcRenderer.removeListener('terminal:data', listener) } }
+})
