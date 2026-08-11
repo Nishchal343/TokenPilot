@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Lock, Eye, EyeOff, ShieldCheck, Key, X, RefreshCw } from 'lucide-react'
-import { settingsApi } from '../services/api'
+import { Lock, Eye, EyeOff, ShieldCheck, Key, X, RefreshCw, Gauge as GaugeIcon } from 'lucide-react'
+import { settingsApi, workspaceApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 
 export default function Settings() {
@@ -14,6 +14,9 @@ export default function Settings() {
   const [otp, setOtp] = useState('')
   const [otpLoading, setOtpLoading] = useState(false)
   const [resending, setResending] = useState(false)
+  const [optimization, setOptimization] = useState({ prompt_enabled:true, document_enabled:true, code_enabled:true, context_enabled:true, smart_cache_enabled:true, similarity_threshold:0.9, optimization_level:'balanced' })
+  const [optimizationSaving, setOptimizationSaving] = useState(false)
+  useEffect(() => { workspaceApi.optimizationSettings().then(r => setOptimization(current => ({ ...current, ...r.data }))).catch(() => {}) }, [])
 
   const set = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   const toggle = key => setShow(s => ({ ...s, [key]: !s[key] }))
@@ -83,6 +86,7 @@ export default function Settings() {
   }
 
   const s = strength(form.new_password)
+  const updateOptimization = async patch => { const next = { ...optimization, ...patch }; setOptimization(next); setOptimizationSaving(true); try { const r = await workspaceApi.updateOptimizationSettings(next); setOptimization(r.data); showToast('success', 'Optimization settings saved.') } catch { showToast('error', 'Could not save optimization settings.') } finally { setOptimizationSaving(false) } }
 
   return (
     <div className="settings-page">
@@ -95,6 +99,7 @@ export default function Settings() {
       </div>
 
       <div className="settings-layout">
+        <div className="panel settings-panel"><div className="panel-head"><div><span className="muted">AI OPTIMIZATION</span><h3>Token Optimization Engine</h3></div><GaugeIcon/></div><p className="muted">Choose which optimization stages run before each Chat and IDE request.</p><div className="optimization-settings-grid">{[['prompt_enabled','Prompt optimization'],['document_enabled','Document optimization'],['code_enabled','Code optimization'],['context_enabled','Context reduction'],['smart_cache_enabled','Smart Token Saver']].map(([key,label]) => <label key={key}><span>{label}</span><input type="checkbox" checked={!!optimization[key]} onChange={e => updateOptimization({ [key]:e.target.checked })}/></label>)}</div><label className="field"><span>Optimization level</span><select value={optimization.optimization_level} onChange={e => updateOptimization({ optimization_level:e.target.value })}><option value="conservative">Conservative</option><option value="balanced">Balanced</option><option value="aggressive">Aggressive</option></select></label><label className="field"><span>Cache similarity threshold: {Math.round(Number(optimization.similarity_threshold || .9) * 100)}%</span><input type="range" min="0.7" max="0.99" step="0.01" value={optimization.similarity_threshold} onChange={e => setOptimization(current => ({ ...current, similarity_threshold:e.target.value }))} onMouseUp={e => updateOptimization({ similarity_threshold:e.target.value })}/></label>{optimizationSaving && <small className="muted">Saving…</small>}</div>
         <div className="panel settings-panel">
           <div className="panel-head">
             <div>

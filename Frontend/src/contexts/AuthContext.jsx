@@ -21,8 +21,17 @@ export function AuthProvider({ children }) {
         email: r.data.email,
         role: r.data.role,
         companyName: r.data.company_name || 'Workspace',
-        avatar_url: r.data.avatar_url
+        avatar_url: r.data.avatar_url,
+        manager_id: r.data.manager_id || null
       })
+      if (tokenType === 'employee') {
+        setUser(previous => {
+          if (!previous) return previous
+          const next = { ...previous, manager_id: r.data.manager_id || null }
+          localStorage.setItem('tokenpilot_user', JSON.stringify(next))
+          return next
+        })
+      }
     } catch (err) {
       console.error('Failed to fetch profile', err)
     }

@@ -1,5 +1,5 @@
 const STATUS_META = {
-  pending: { className: 'pending', label: 'Pending Approval' },
+  pending: { className: 'pending', label: 'Pending' },
   approved: { className: 'approved', label: 'Approved' },
   rejected: { className: 'rejected', label: 'Rejected' }
 }

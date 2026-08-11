@@ -41,16 +41,22 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const notificationRef = useRef(null)
 
-  const load = () => notificationApi.list({ limit: 100 }).then(r => setItems(r.data)).catch(() => {})
+  const load = () => notificationApi.list({ limit: 100, _ts: Date.now() }).then(r => setItems(r.data || [])).catch(() => {})
 
   useEffect(() => {
     load()
     const refresh = () => load()
-    const interval = window.setInterval(load, 30000)
+    const interval = window.setInterval(load, 10000)
+    const refreshOnFocus = () => load()
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') load() }
     window.addEventListener('tokenpilot:notifications-updated', refresh)
+    window.addEventListener('focus', refreshOnFocus)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
       window.clearInterval(interval)
       window.removeEventListener('tokenpilot:notifications-updated', refresh)
+      window.removeEventListener('focus', refreshOnFocus)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [])
 
@@ -97,7 +103,7 @@ export default function NotificationBell() {
   const unread = items.filter(item => !item.is_read).length
 
   return <div className="notification-wrap" ref={notificationRef}>
-    <button className="icon-button" onClick={() => setOpen(value => !value)} aria-label="Notifications" aria-expanded={open}>
+    <button className="icon-button" onClick={() => { const next = !open; setOpen(next); if (next) load() }} aria-label="Notifications" aria-expanded={open}>
       <Bell size={18}/>{unread > 0 && <i>{unread > 9 ? '9+' : unread}</i>}
     </button>
     {open && <div className="notification-panel">

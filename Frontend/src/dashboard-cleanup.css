@@ -1,0 +1,5 @@
+/* Keep the dashboard focused on its main overview and optimization content. */
+.dashboard-overview-stats,
+.recent-optimization-panel {
+  display: none !important;
+}

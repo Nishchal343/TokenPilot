@@ -8,7 +8,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.models.company import Company
 from app.models.employee import Employee
 from app.models.invitation import Invitation
-from app.models.enums import OTPPurpose, EmployeeRole, InvitationStatus, InvitedByType
+from app.models.enums import OTPPurpose, EmployeeRole, InvitationStatus, InvitedByType, OfferedRole
 from app.models.security_log import SecurityLog
 from app.services.notification_service import create_notification
 from app.services.email_service import email_service
@@ -207,11 +207,13 @@ def _join_pending_invitation(db: Session, employee: Employee) -> bool:
         return False
 
     if invitation.invited_by_type == InvitedByType.company:
-        company_id = invitation.invited_by_id
+        company_id = invitation.company_id or invitation.invited_by_id
         invited_by_id = None
     else:
         inviter = db.query(Employee).filter(Employee.id == invitation.invited_by_id).first()
         if not inviter or not inviter.company_id:
+            return False
+        if invitation.company_id != inviter.company_id or invitation.manager_id != inviter.id or inviter.role != EmployeeRole.manager:
             return False
         company_id = inviter.company_id
         invited_by_id = inviter.id
@@ -219,7 +221,7 @@ def _join_pending_invitation(db: Session, employee: Employee) -> bool:
     employee.company_id = company_id
     employee.invited_by_id = invited_by_id
     employee.manager_id = invitation.manager_id
-    employee.role = EmployeeRole(invitation.role_offered.value)
+    employee.role = EmployeeRole.manager if invitation.role_offered == OfferedRole.manager else EmployeeRole.employee
     invitation.status = InvitationStatus.accepted
     invitation.accepted_at = now
 
@@ -320,7 +322,8 @@ def employee_verify_otp(payload: EmployeeVerifyOTPRequest, db: Session = Depends
         "type": "employee",
         "employee_id": employee.id,
         "company_id": employee.company_id,
-        "role": employee.role.value if employee.role else None
+        "role": employee.role.value if employee.role else None,
+        "manager_id": employee.manager_id,
     }
     access_token = create_access_token(data=token_payload)
     return {"access_token": access_token, "token_type": "bearer"}
@@ -351,7 +354,8 @@ def employee_login(payload: EmployeeLoginRequest, request: Request, db: Session 
         "type": "employee",
         "employee_id": employee.id,
         "company_id": employee.company_id,
-        "role": employee.role.value if employee.role else None
+        "role": employee.role.value if employee.role else None,
+        "manager_id": employee.manager_id,
     }
     access_token = create_access_token(data=token_payload)
     return {"access_token": access_token, "token_type": "bearer"}

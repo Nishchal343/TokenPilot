@@ -246,7 +246,7 @@ export default function Invitations() {
                             {item.role_offered === 'manager' ? (
                               <span className="role-chip" style={{ color: '#c4b5fd', background: 'rgba(139, 92, 246, 0.12)', borderColor: 'rgba(139, 92, 246, 0.3)' }}>Manager</span>
                             ) : (
-                              <span className="role-chip" style={{ color: '#a5afc2', background: 'rgba(41, 50, 71, 0.15)', borderColor: 'rgba(41, 50, 71, 0.4)' }}>Employee</span>
+                              <span className="role-chip" style={{ color: '#a5afc2', background: 'rgba(41, 50, 71, 0.15)', borderColor: 'rgba(41, 50, 71, 0.4)' }}>Team Member</span>
                             )}
                           </td>
                           <td>
@@ -409,7 +409,7 @@ export default function Invitations() {
 
 function InviteMemberModal({ onClose, onSuccess }) {
   const { showToast } = useToast()
-  const [form, setForm] = useState({ name: '', email: '', role: 'employee', manager_id: '' })
+  const [form, setForm] = useState({ name: '', email: '', role: 'manager', manager_id: '' })
   const [loading, setLoading] = useState(false)
   const [managers, setManagers] = useState([])
 
@@ -479,25 +479,10 @@ function InviteMemberModal({ onClose, onSuccess }) {
               value={form.role} 
               onChange={e => setForm({ ...form, role: e.target.value })}
             >
-              <option value="employee">Employee</option>
-              <option value="manager">Manager (Team Lead)</option>
+              <option value="manager">Manager</option>
             </select>
           </label>
 
-          {form.role === 'employee' && managers.length > 0 && (
-            <label className="field">
-              <span>Reporting Manager (Optional)</span>
-              <select 
-                value={form.manager_id} 
-                onChange={e => setForm({ ...form, manager_id: e.target.value })}
-              >
-                <option value="">Directly reports to Company Admin</option>
-                {managers.map(mgr => (
-                  <option key={mgr.id} value={mgr.id}>{mgr.name} ({mgr.email})</option>
-                ))}
-              </select>
-            </label>
-          )}
 
           <div className="modal-actions">
             <button type="button" className="button secondary" onClick={onClose} disabled={loading}>Cancel</button>

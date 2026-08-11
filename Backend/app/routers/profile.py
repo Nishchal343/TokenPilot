@@ -65,6 +65,7 @@ def get_profile(db: Session = Depends(get_db), payload: dict = Depends(get_curre
         result["department"] = user.department
         result["designation"] = user.designation
         result["reporting_manager"] = user.manager.name if user.manager else None
+        result["manager_id"] = user.manager_id
     return result
 
 

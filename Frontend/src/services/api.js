@@ -7,9 +7,11 @@ api.interceptors.request.use(config => {
   if (config.url?.includes('/messages') && config.data?.content && window.tokenpilotWorkspaceContext) {
     config.data = { ...config.data, content: `${config.data.content}\n\nWorkspace context:\n${window.tokenpilotWorkspaceContext}` }
   }
+  if (config.url?.includes('/messages') && window.tokenpilotCacheReuse) { config.data = { ...config.data, ...window.tokenpilotCacheReuse }; window.tokenpilotCacheReuse = null }
   return config
 })
 api.interceptors.response.use(r => r, error => {
+  if (error.response?.status === 409 && error.response?.data?.detail?.code === 'CACHE_CONFIRMATION_REQUIRED') window.dispatchEvent(new CustomEvent('tokenpilot:cache-candidate', { detail:error.response.data.detail.candidate }))
   if (error.response?.status === 401 && !error.config?.url?.includes('/auth/')) {
     window.dispatchEvent(new Event('tokenpilot:logout'))
   }
@@ -21,7 +23,7 @@ export const authApi = {
   employeeRegister: p => api.post('/auth/employee/register', p), employeeVerify: p => api.post('/auth/employee/verify-otp', p), employeeLogin: p => api.post('/auth/employee/login', p),
   forgot: (kind, p) => api.post(`/auth/${kind}/forgot-password`, p), reset: (kind, p) => api.post(`/auth/${kind}/reset-password`, p)
 }
-export const dashboardApi = { company: () => api.get('/dashboard/company'), manager: () => api.get('/dashboard/team-lead'), employee: () => api.get('/dashboard/employee') }
+export const dashboardApi = { company: () => api.get('/dashboard/company'), manager: () => api.get('/dashboard/team-lead'), employee: () => api.get('/dashboard/employee'), optimization: () => api.get('/workspace/optimization/analytics') }
 export const apiKeyRequestApi = {
   create: payload => api.post('/api/requests', payload),
   mine: () => api.get('/api/requests/my'),
@@ -35,7 +37,7 @@ export const apiKeyRequestApi = {
 export const workspaceApi = {
   connection: () => api.get('/workspace/connection'), connections: () => api.get('/workspace/connections'), personalKeys: () => api.get('/workspace/personal-keys'), personalKey: p => api.post('/workspace/personal-key', p), updatePersonalKey: (id, p) => api.patch(`/workspace/personal-keys/${id}`, p), deletePersonalKey: id => api.delete(`/workspace/personal-keys/${id}`),
   chats: q => api.get('/workspace/chats', { params: q ? { q } : {} }), createChat: () => api.post('/workspace/chats'), chat: id => api.get(`/workspace/chats/${id}`), renameChat: (id, p) => api.patch(`/workspace/chats/${id}`, p), deleteChat: id => api.delete(`/workspace/chats/${id}`), send: (id, p) => api.post(`/workspace/chats/${id}/messages`, p, { timeout: 180000 }),
-  files: () => api.get('/workspace/files'), createFile: p => api.post('/workspace/files', p), updateFile: (id, p) => api.patch(`/workspace/files/${id}`, p), deleteFile: id => api.delete(`/workspace/files/${id}`)
+  files: () => api.get('/workspace/files'), createFile: p => api.post('/workspace/files', p), updateFile: (id, p) => api.patch(`/workspace/files/${id}`, p), deleteFile: id => api.delete(`/workspace/files/${id}`), optimizationSettings: () => api.get('/workspace/optimization/settings'), updateOptimizationSettings: p => api.patch('/workspace/optimization/settings', p), optimizationAnalytics: () => api.get('/workspace/optimization/analytics')
 }
 export const organizationApi = {
   tree: () => api.get('/organization/tree'),

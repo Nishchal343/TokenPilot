@@ -69,7 +69,7 @@ export default function PreOrganizationOnboarding({ variant = 'dashboard' }) {
   }
 
   return <div className="dashboard onboarding-dashboard">
-    <div className="page-heading"><div><div className="eyebrow">EMPLOYEE ONBOARDING</div><h1>Welcome to TokenPilot 👋</h1><p className="muted">Your account is active. You’re currently not part of an organization.</p></div><button className="button secondary" onClick={load}><RefreshCw size={15} /> Refresh</button></div>
+    <div className="page-heading"><div><div className="eyebrow">EMPLOYEE ONBOARDING</div><h1>Welcome to TokenPilot 👋</h1><p className="muted">Your account is active. You’re currently not part of an organization.</p></div></div>
     <section className="panel onboarding-welcome"><div><h2>Your workspace is ready when you are.</h2><p>Once you receive and accept an invitation, you’ll unlock your organization’s AI Workspace, analytics and budgets.</p></div><Users size={42} /></section>
     <div className="dashboard-grid">
       <section className="panel"><div className="panel-head"><h3>Account Status</h3><Check size={17} className="positive" /></div><StatusLine icon={<Check size={15} />} text="Email Verified" done /><StatusLine icon={<Check size={15} />} text="Account Active" done /><StatusLine icon={<Circle size={15} />} text="Waiting for Organization" /></section>

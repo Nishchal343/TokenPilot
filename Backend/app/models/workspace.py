@@ -31,6 +31,7 @@ class ChatMessage(Base):
     estimated_cost = Column(String(32), nullable=True)
     latency_ms = Column(Integer, nullable=True)
     attachments = Column(JSON, nullable=True)
+    optimization_report = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

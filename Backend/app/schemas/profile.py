@@ -20,6 +20,7 @@ class ProfileResponse(BaseModel):
     department: Optional[str] = None
     designation: Optional[str] = None
     reporting_manager: Optional[str] = None
+    manager_id: Optional[int] = None
 
     # Company-only
     website: Optional[str] = None

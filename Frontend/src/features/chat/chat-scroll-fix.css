@@ -128,3 +128,5 @@
     max-height: calc(100dvh - 110px);
   }
 }
+.tp-token-usage { display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; color:#718097; font-size:10px; }
+.tp-token-usage b { color:#aeb9cc; font-weight:700; }

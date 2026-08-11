@@ -1,0 +1,8 @@
+.tp-chat-header > div > button {
+  display: none;
+}
+
+.tp-connection-choice{display:flex;align-items:center;gap:8px;min-width:0;flex:1;padding:0;background:transparent;color:inherit;text-align:left}
+.tp-connection-choice>span{min-width:0;flex:1}
+.tp-connection-remove{display:grid;place-items:center;padding:5px;border-radius:5px;background:transparent;color:#ff9eab}
+.tp-connection-remove:hover{background:#ff62781c;color:#ffbdc7}

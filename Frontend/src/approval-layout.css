@@ -1,0 +1,84 @@
+.approval-panel {
+  overflow: visible;
+}
+
+.approval-panel .table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.approval-panel table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.approval-panel th,
+.approval-panel td {
+  padding-left: 10px;
+  padding-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Manager table: keep the status badge and all three actions inside the card. */
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(1),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(1) { width: 17%; }
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(2),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(2) { width: 11%; }
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(3),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(3) { width: 11%; }
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(4),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(4) { width: 15%; }
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(5),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(5) { width: 18%; }
+.approval-panel table:not(:has(th:nth-child(7))) th:nth-child(6),
+.approval-panel table:not(:has(th:nth-child(7))) td:nth-child(6) {
+  width: 28%;
+  min-width: 300px;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+/* Company table has one action button, so its action column can stay compact. */
+.approval-panel table:has(th:nth-child(7)) th:nth-child(1),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(1) { width: 15%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(2),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(2) { width: 14%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(3),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(3) { width: 10%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(4),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(4) { width: 14%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(5),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(5) { width: 14%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(6),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(6) { width: 13%; }
+.approval-panel table:has(th:nth-child(7)) th:nth-child(7),
+.approval-panel table:has(th:nth-child(7)) td:nth-child(7) { width: 20%; }
+
+.approval-panel table:not(:has(th:nth-child(7))) td:last-child {
+  overflow: visible;
+}
+
+.approval-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.approval-actions .compact-button {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.approval-panel .status-pill {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -75,12 +75,13 @@ export default function App() {
           <Route path="/dashboard/team-leader" element={<Role role="manager"><Dashboard type="manager"/></Role>}/>
           <Route path="/dashboard/team-leader/my-team" element={<Role role="manager"><Organization/></Role>}/>
           <Route path="/dashboard/team-leader/team-budget" element={<Role role="manager"><Budgets/></Role>}/>
+          <Route path="/dashboard/team-leader/requests" element={<Role role="manager"><Requests/></Role>}/>
           <Route path="/dashboard/team-leader/ai-workspace" element={<Role role="manager"><AIWorkspace/></Role>}/>
           <Route path="/dashboard/team-leader/ai-workspace/chat" element={<Role role="manager"><AIChat/></Role>}/>
           <Route path="/dashboard/team-leader/ai-workspace/ide" element={<Role role="manager"><AIIDE/></Role>}/>
 
           <Route path="/dashboard/member" element={<Role role="employee"><Dashboard type="employee"/></Role>}/>
-          <Route path="/dashboard/member/requests" element={<Role role="employee"><Requests/></Role>}/>
+          <Route path="/dashboard/member/requests" element={<Role role="employee" requiresManager><Requests/></Role>}/>
           <Route path="/dashboard/member/ai-workspace" element={<Role role="employee"><AIWorkspace/></Role>}/>
           <Route path="/dashboard/member/ai-workspace/chat" element={<Role role="employee"><AIChat/></Role>}/>
           <Route path="/dashboard/member/ai-workspace/ide" element={<Role role="employee"><AIIDE/></Role>}/>
@@ -105,4 +106,4 @@ export default function App() {
   )
 }
 
-function Role({role,children}) { const {user}=useAuth(); const actual=user?.type==='company'?'company':user?.role; return actual===role?children:<Navigate to={roleHome(user)} replace/> }
+function Role({role, requiresManager = false, children}) { const {user, profile}=useAuth(); const actual=user?.type==='company'?'company':user?.role; const managerId=user?.manager_id ?? profile?.manager_id; return actual===role && (!requiresManager || Boolean(managerId))?children:<Navigate to={roleHome(user)} replace/> }

@@ -84,7 +84,7 @@ def get_current_inviter(
 ) -> dict:
     """
     Dependency that returns the current inviter information.
-    The inviter can be a Company or an Employee with the Manager role.
+    Only a verified company admin or verified manager may create invitations.
     """
     token_type = payload.get("type")
 
@@ -101,6 +101,7 @@ def get_current_inviter(
             "invited_by_id": company.id,
             "company_id": company.id,
             "inviter_name": company.name,
+            "role": "company_admin",
         }
 
     elif token_type == "employee":
@@ -116,11 +117,14 @@ def get_current_inviter(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only managers (Team Leads) can invite team members."
             )
+        if not employee.company_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager must belong to a company.")
         return {
             "invited_by_type": InvitedByType.employee,
             "invited_by_id": employee.id,
             "company_id": employee.company_id,
             "inviter_name": employee.name,
+            "role": "manager",
         }
 
     else:
@@ -134,6 +138,36 @@ def _get_company_name(db: Session, inviter: dict) -> str:
     """Get the company name from inviter context."""
     company = db.query(Company).filter(Company.id == inviter["company_id"]).first()
     return company.name if company else "Your Organization"
+
+
+def get_invitation_manager_or_company(
+    db: Session = Depends(get_db),
+    payload: dict = Depends(get_current_token_payload),
+) -> dict:
+    """Authorize invitation management and return a scoped actor."""
+    if payload.get("type") == "company":
+        company = db.query(Company).filter(
+            Company.id == payload.get("company_id"), Company.is_verified.is_(True)
+        ).first()
+        if not company:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verified company account required.")
+        return {"kind": "company", "id": company.id, "company": company}
+
+    if payload.get("type") == "employee":
+        manager = db.query(Employee).filter(Employee.id == payload.get("employee_id")).first()
+        if not manager or not manager.is_verified or not manager.company_id or manager.role != EmployeeRole.manager:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager role required.")
+        company = db.query(Company).filter(Company.id == manager.company_id).first()
+        return {"kind": "manager", "id": manager.id, "company": company}
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invitation management is not allowed.")
+
+
+def _authorize_invitation_management(invitation: Invitation, actor: dict):
+    if invitation.company_id != actor["company"].id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+    if actor["kind"] == "manager" and invitation.invited_by_user_id != actor["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Managers may manage only their own invitations.")
 
 
 # ─── Invitation List (Company Admin Only) ────────────────────────────────────
@@ -211,27 +245,28 @@ def send_invitation(
 ):
     role_to_offer = payload.role
     if inviter["invited_by_type"] == InvitedByType.employee:
-        role_to_offer = role_to_offer or OfferedRole.employee
+        role_to_offer = role_to_offer or OfferedRole.team_member
         manager_id = inviter["invited_by_id"]
-        if role_to_offer != OfferedRole.employee:
+        if role_to_offer != OfferedRole.team_member:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Managers can invite employees only.",
             )
     else:
-        role_to_offer = role_to_offer or OfferedRole.employee
-        manager_id = payload.manager_id
-        if manager_id is not None:
-            manager = db.query(Employee).filter(
-                Employee.id == manager_id,
-                Employee.company_id == inviter["company_id"],
-                Employee.role == EmployeeRole.manager,
-            ).first()
-            if not manager:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="manager_id must reference a manager in this company.",
-                )
+        role_to_offer = role_to_offer or OfferedRole.manager
+        if payload.manager_id is not None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="manager_id must be null for manager invitations.")
+        if role_to_offer != OfferedRole.manager:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Company admins can invite managers only.",
+            )
+        manager_id = None
+
+    if role_to_offer == OfferedRole.manager and manager_id is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="manager_id must be null for manager invitations.")
+    if role_to_offer == OfferedRole.team_member and manager_id != inviter["invited_by_id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Team members must be assigned to the inviting manager.")
 
     # Block if email belongs to a company account
     if db.query(Company).filter(Company.email == payload.employee_email).first():
@@ -240,7 +275,7 @@ def send_invitation(
             detail="A company account with this email already exists.",
         )
 
-    if role_to_offer not in (OfferedRole.employee, OfferedRole.manager):
+    if role_to_offer not in (OfferedRole.team_member, OfferedRole.manager):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid invitation role.",
@@ -262,12 +297,6 @@ def send_invitation(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only managers can invite employees.",
-        )
-
-    if inviter["invited_by_type"] == InvitedByType.employee and payload.manager_id is not None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Managers assign invitees to themselves.",
         )
 
     # Cancel previous pending invitations for this email
@@ -293,6 +322,8 @@ def send_invitation(
         email=payload.employee_email,
         invited_by_type=inviter["invited_by_type"],
         invited_by_id=inviter["invited_by_id"],
+        invited_by_user_id=(inviter["invited_by_id"] if inviter["invited_by_type"] == InvitedByType.employee else None),
+        company_id=inviter["company_id"],
         role_offered=role_to_offer,
         manager_id=manager_id,
         token=token,
@@ -314,7 +345,7 @@ def send_invitation(
 
     # Send email
     company_name = _get_company_name(db, inviter)
-    role_label = "Manager" if role_to_offer == OfferedRole.manager else "Employee"
+    role_label = "Manager" if role_to_offer == OfferedRole.manager else "Team Member"
     email_service.send_invitation_email(
         recipient=payload.employee_email,
         invitation_token=token,
@@ -336,20 +367,14 @@ def send_invitation(
 def resend_invitation(
     invitation_id: int,
     db: Session = Depends(get_db),
-    company=Depends(get_current_company),
+    actor: dict = Depends(get_invitation_manager_or_company),
 ):
     """Resend an invitation with a fresh token and expiry."""
     invitation = db.query(Invitation).filter(Invitation.id == invitation_id).first()
     if not invitation:
         raise HTTPException(status_code=404, detail="Invitation not found.")
 
-    # Verify this invitation belongs to this company
-    if invitation.invited_by_type == InvitedByType.company and invitation.invited_by_id != company.id:
-        raise HTTPException(status_code=403, detail="Access denied.")
-    if invitation.invited_by_type == InvitedByType.employee:
-        inviter_emp = db.query(Employee).filter(Employee.id == invitation.invited_by_id).first()
-        if not inviter_emp or inviter_emp.company_id != company.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+    _authorize_invitation_management(invitation, actor)
 
     if invitation.status not in (InvitationStatus.pending, InvitationStatus.expired):
         raise HTTPException(status_code=400, detail=f"Cannot resend a {invitation.status.value} invitation.")
@@ -362,12 +387,12 @@ def resend_invitation(
     db.commit()
 
     # Send email
-    role_label = "Manager" if invitation.role_offered == OfferedRole.manager else "Employee"
+    role_label = "Manager" if invitation.role_offered == OfferedRole.manager else "Team Member"
     email_service.send_invitation_email(
         recipient=invitation.email,
         invitation_token=invitation.token,
-        company_name=company.name,
-        inviter_name=company.name,
+        company_name=actor["company"].name,
+        inviter_name=actor["company"].name,
         role_offered=role_label,
         expires_at=invitation.token_expires_at,
         account_exists=db.query(Employee).filter(Employee.email == invitation.email).first() is not None,
@@ -384,19 +409,14 @@ def resend_invitation(
 def cancel_invitation(
     invitation_id: int,
     db: Session = Depends(get_db),
-    company=Depends(get_current_company),
+    actor: dict = Depends(get_invitation_manager_or_company),
 ):
     """Cancel a pending invitation."""
     invitation = db.query(Invitation).filter(Invitation.id == invitation_id).first()
     if not invitation:
         raise HTTPException(status_code=404, detail="Invitation not found.")
 
-    if invitation.invited_by_type == InvitedByType.company and invitation.invited_by_id != company.id:
-        raise HTTPException(status_code=403, detail="Access denied.")
-    if invitation.invited_by_type == InvitedByType.employee:
-        inviter_emp = db.query(Employee).filter(Employee.id == invitation.invited_by_id).first()
-        if not inviter_emp or inviter_emp.company_id != company.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+    _authorize_invitation_management(invitation, actor)
 
     if invitation.status != InvitationStatus.pending:
         raise HTTPException(status_code=400, detail=f"Cannot cancel a {invitation.status.value} invitation.")
@@ -416,19 +436,14 @@ def cancel_invitation(
 def delete_invitation(
     invitation_id: int,
     db: Session = Depends(get_db),
-    company=Depends(get_current_company),
+    actor: dict = Depends(get_invitation_manager_or_company),
 ):
     """Permanently delete an invitation record."""
     invitation = db.query(Invitation).filter(Invitation.id == invitation_id).first()
     if not invitation:
         raise HTTPException(status_code=404, detail="Invitation not found.")
 
-    if invitation.invited_by_type == InvitedByType.company and invitation.invited_by_id != company.id:
-        raise HTTPException(status_code=403, detail="Access denied.")
-    if invitation.invited_by_type == InvitedByType.employee:
-        inviter_emp = db.query(Employee).filter(Employee.id == invitation.invited_by_id).first()
-        if not inviter_emp or inviter_emp.company_id != company.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+    _authorize_invitation_management(invitation, actor)
 
     db.delete(invitation)
     db.commit()
@@ -521,11 +536,12 @@ def accept_invitation(payload: AcceptInvitationRequest, db: Session = Depends(ge
         )
 
     # Update employee role and company details
-    company_id = None
+    company_id = invitation.company_id
     invited_by_id = None
 
     if invitation.invited_by_type == InvitedByType.company:
-        company_id = invitation.invited_by_id
+        if company_id != invitation.invited_by_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invitation company does not match its inviter.")
     elif invitation.invited_by_type == InvitedByType.employee:
         inviter = db.query(Employee).filter(Employee.id == invitation.invited_by_id).first()
         if not inviter:
@@ -533,13 +549,20 @@ def accept_invitation(payload: AcceptInvitationRequest, db: Session = Depends(ge
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Inviting employee no longer exists."
             )
+        if (
+            not inviter.company_id
+            or invitation.company_id != inviter.company_id
+            or invitation.manager_id != inviter.id
+            or inviter.role != EmployeeRole.manager
+        ):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid team-member invitation ownership.")
         company_id = inviter.company_id
         invited_by_id = inviter.id
 
     employee.company_id = company_id
     employee.invited_by_id = invited_by_id
     employee.manager_id = invitation.manager_id
-    employee.role = EmployeeRole(invitation.role_offered.value)
+    employee.role = EmployeeRole.manager if invitation.role_offered == OfferedRole.manager else EmployeeRole.employee
     employee.is_verified = True
 
     invitation.status = InvitationStatus.accepted

@@ -6,6 +6,13 @@ import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
 import StatusBadge from '../components/StatusBadge'
 
+const providerForModel = model => {
+  const value = String(model || '').toLowerCase()
+  if (value.startsWith('gemini')) return 'Gemini'
+  if (value.startsWith('claude') || value.startsWith('anthropic')) return 'Claude'
+  return 'OpenAI'
+}
+
 const statusLabels = { PENDING_COMPANY: 'Pending Approval', APPROVED: 'Approved', REJECTED: 'Rejected' }
 
 export default function Budgets() {
@@ -22,7 +29,15 @@ function TeamLeaderRequests() {
   const [working, setWorking] = useState(null)
 
   const load = () => apiKeyRequestApi.teamLeader().then(response => setRequests(Array.isArray(response.data) ? response.data : [])).catch(err => setError(err.response?.data?.detail || 'Unable to load pending requests.'))
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    const interval = window.setInterval(load, 10000)
+    const refresh = () => load()
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') load() }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refreshWhenVisible) }
+  }, [])
 
   const action = (request, type) => {
     const reason = type === 'reject' ? window.prompt('Rejection reason is required:') : undefined
@@ -53,11 +68,19 @@ function CompanyApprovalCenter() {
   const [working, setWorking] = useState(null)
 
   const load = () => apiKeyRequestApi.companyRequests().then(response => setRequests(Array.isArray(response.data) ? response.data : [])).catch(err => setError(err.response?.data?.detail || 'Unable to load API key requests.'))
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    const interval = window.setInterval(load, 10000)
+    const refresh = () => load()
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') load() }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refreshWhenVisible) }
+  }, [])
 
   const approve = request => {
     setWorking(request.id)
-    apiKeyRequestApi.companyAction(request.id, { action: 'approve', provider: form.provider, api_key: form.api_key, final_budget: Number(form.final_budget || request.leader_modified_budget || request.requested_budget) })
+    apiKeyRequestApi.companyAction(request.id, { action: 'approve', provider: providerForModel(request.requested_model), api_key: form.api_key, final_budget: Number(form.final_budget || request.leader_modified_budget || request.requested_budget) })
       .then(() => { showToast('success', 'API key activated and access granted.'); setSelected(null); setForm({ provider: 'OpenAI', api_key: '', final_budget: '' }); load() })
       .catch(err => showToast('error', err.response?.data?.detail || 'Unable to approve request.'))
       .finally(() => setWorking(null))

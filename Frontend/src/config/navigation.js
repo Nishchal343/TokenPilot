@@ -15,6 +15,7 @@ export const navigationByRole = {
     { label: 'Dashboard', path: '/dashboard/team-leader', Icon: LayoutDashboard },
     { label: 'My Team', path: '/dashboard/team-leader/my-team', Icon: Network },
     { label: 'Team Budget', path: '/dashboard/team-leader/team-budget', Icon: RupeeIcon },
+    { label: 'Company Request', path: '/dashboard/team-leader/requests', Icon: ClipboardList },
     { label: 'AI Workspace', path: '/dashboard/team-leader/ai-workspace', Icon: Sparkles }
   ],
   employee: [

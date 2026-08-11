@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_company, get_current_employee, get_current_manager
+from app.core.dependencies import get_current_company, get_current_assigned_team_member, get_current_employee, get_current_manager
 from app.models.api_key_request import APIKey, APIKeyRequest
 from app.models.enums import APIKeyRequestStatus
 from app.schemas.api_key_request import (

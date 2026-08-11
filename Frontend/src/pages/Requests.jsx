@@ -22,7 +22,15 @@ export default function Requests() {
   const [submitting, setSubmitting] = useState(false)
 
   const load = () => apiKeyRequestApi.mine().then(response => setRequests(Array.isArray(response.data) ? response.data : [])).catch(err => setError(err.response?.data?.detail || 'Unable to load requests.'))
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    const interval = window.setInterval(load, 10000)
+    const refresh = () => load()
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') load() }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refreshWhenVisible) }
+  }, [])
 
   const submit = event => {
     event.preventDefault()

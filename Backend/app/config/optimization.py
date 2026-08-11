@@ -1,0 +1,44 @@
+import os
+
+
+def _int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+MAX_CONTEXT_TOKENS = _int("TOKENPILOT_MAX_CONTEXT_TOKENS", 8192)
+MIN_MESSAGES_TO_PRESERVE = _int("TOKENPILOT_MIN_CONTEXT_MESSAGES", 2)
+SIMILARITY_THRESHOLD = _float("TOKENPILOT_CONTEXT_SIMILARITY_THRESHOLD", 0.08)
+PRIORITY_WEIGHTS = {
+    "similarity": _float("TOKENPILOT_CONTEXT_WEIGHT_SIMILARITY", 0.45),
+    "recency": _float("TOKENPILOT_CONTEXT_WEIGHT_RECENCY", 0.20),
+    "code": _float("TOKENPILOT_CONTEXT_WEIGHT_CODE", 0.15),
+    "documents": _float("TOKENPILOT_CONTEXT_WEIGHT_DOCUMENTS", 0.10),
+    "follow_up": _float("TOKENPILOT_CONTEXT_WEIGHT_FOLLOW_UP", 0.10),
+}
+
+MAX_DOCUMENT_TOKENS = _int("TOKENPILOT_MAX_DOCUMENT_TOKENS", 4096)
+DOCUMENT_CHUNK_SIZE = _int("TOKENPILOT_DOCUMENT_CHUNK_SIZE", 1200)
+DOCUMENT_CHUNK_OVERLAP = _int("TOKENPILOT_DOCUMENT_CHUNK_OVERLAP", 120)
+MAX_RETRIEVED_DOCUMENT_CHUNKS = _int("TOKENPILOT_MAX_RETRIEVED_DOCUMENT_CHUNKS", 6)
+DOCUMENT_SIMILARITY_THRESHOLD = _float("TOKENPILOT_DOCUMENT_SIMILARITY_THRESHOLD", 0.05)
+
+MAX_CODE_TOKENS = _int("TOKENPILOT_MAX_CODE_TOKENS", 8192)
+MAX_CODE_FILES = _int("TOKENPILOT_MAX_CODE_FILES", 12)
+CODE_DEPENDENCY_DEPTH = _int("TOKENPILOT_CODE_DEPENDENCY_DEPTH", 1)
+CODE_SUPPORTED_LANGUAGES = tuple(filter(None, os.getenv("TOKENPILOT_CODE_LANGUAGES", "python,javascript,typescript,java,c,cpp,go,rust,html,css,sql").split(",")))
+CODE_IGNORED_DIRECTORIES = tuple(filter(None, os.getenv("TOKENPILOT_CODE_IGNORED_DIRECTORIES", "node_modules,dist,build,__pycache__,.git,vendor,.next,target").split(",")))
+
+RESPONSE_CACHE_TTL_SECONDS = _int("TOKENPILOT_RESPONSE_CACHE_TTL_SECONDS", 86400)
+RESPONSE_CACHE_MAX_ENTRIES = _int("TOKENPILOT_RESPONSE_CACHE_MAX_ENTRIES", 1000)
+RESPONSE_CACHE_SEMANTIC_THRESHOLD = _float("TOKENPILOT_RESPONSE_CACHE_SEMANTIC_THRESHOLD", 0.92)
+GEMINI_FALLBACK_MODEL = os.getenv("TOKENPILOT_GEMINI_FALLBACK_MODEL", "gemini-3.6-flash")

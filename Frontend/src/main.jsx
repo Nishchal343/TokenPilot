@@ -5,6 +5,8 @@ import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import './styles.css'
+import './approval-layout.css'
+import './dashboard-cleanup.css'
 
 class AppErrorBoundary extends Component {
   state = { error: null }

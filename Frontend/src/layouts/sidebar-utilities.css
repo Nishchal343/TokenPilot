@@ -1,7 +1,7 @@
 .sidebar-utilities {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 42px;
   margin: -14px 5px 18px;
@@ -18,6 +18,39 @@
 .sidebar-utilities .profile-dropdown {
   right: 0;
   top: 42px;
+}
+
+.sidebar-utilities .notification-panel {
+  left: calc(100% + 12px);
+  right: auto;
+}
+
+.sidebar-utilities .profile-dropdown {
+  left: calc(100% + 12px);
+  right: auto;
+}
+
+.app-shell .sidebar {
+  position: relative;
+}
+
+.sidebar-utilities .notification-wrap,
+.sidebar-utilities .profile-dropdown-wrap {
+  position: static;
+}
+
+.sidebar-utilities .notification-panel,
+.sidebar-utilities .profile-dropdown {
+  position: fixed;
+  left: 245px;
+  right: auto;
+  top: 76px;
+  z-index: 100;
+}
+
+.collapsed .sidebar-utilities .notification-panel,
+.collapsed .sidebar-utilities .profile-dropdown {
+  left: 74px;
 }
 
 .collapsed .sidebar-utilities {

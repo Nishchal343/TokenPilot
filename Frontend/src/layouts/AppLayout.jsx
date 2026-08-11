@@ -12,6 +12,7 @@ export default function AppLayout() {
   const { user, profile, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const kind = user?.type === 'company' ? 'company' : user?.role === 'manager' ? 'manager' : 'employee'
+  const managerId = user?.manager_id ?? profile?.manager_id
 
   return (
     <div className={`app-shell ${collapsed ? 'collapsed' : ''}`}>
@@ -44,7 +45,7 @@ export default function AppLayout() {
         )}
         
         <nav>
-          {navigationByRole[kind].map(({ label, path, Icon }) => (
+          {navigationByRole[kind].filter(item => !(item.path === '/dashboard/member/requests' && !managerId)).map(({ label, path, Icon }) => (
             <NavLink
               key={path}
               to={path}

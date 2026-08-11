@@ -21,7 +21,7 @@ setup_logging()
 app = FastAPI(
     title="TokenPilot Backend",
     version="1.0.0",
-    description="Enterprise AI Token Optimization Platform API"
+    description="TokenPilot provider-routed AI workspace API"
 )
 
 # Serve uploaded files (avatars, screenshots)

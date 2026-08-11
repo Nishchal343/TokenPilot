@@ -384,7 +384,7 @@ export default function Organization() {
 // 1. Invite Member Modal Subcomponent
 function InviteMemberModal({ onClose, onSuccess, managerMode = false }) {
   const { showToast } = useToast()
-  const [form, setForm] = useState({ name: '', email: '', role: 'employee', manager_id: '' })
+  const [form, setForm] = useState({ name: '', email: '', role: managerMode ? 'team_member' : 'manager', manager_id: '' })
   const [loading, setLoading] = useState(false)
   const [managers, setManagers] = useState([])
 
@@ -454,12 +454,11 @@ function InviteMemberModal({ onClose, onSuccess, managerMode = false }) {
               value={form.role} 
               onChange={e => setForm({ ...form, role: e.target.value })}
             >
-              <option value="employee">Employee</option>
-              {!managerMode && <option value="manager">Manager (Team Lead)</option>}
+              {managerMode ? <option value="team_member">Team Member</option> : <option value="manager">Manager</option>}
             </select>
           </label>
 
-          {form.role === 'employee' && managers.length > 0 && (
+          {!managerMode && form.role === 'team_member' && managers.length > 0 && (
             <label className="field">
               <span>Reporting Manager (Optional)</span>
               <select 

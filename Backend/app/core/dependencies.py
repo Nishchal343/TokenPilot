@@ -94,4 +94,22 @@ def get_current_manager(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Manager (Team Lead) role required.",
         )
-    return employee
+    return employee
+
+
+def get_current_assigned_team_member(
+    employee: Employee = Depends(get_current_employee),
+) -> Employee:
+    """Allow request workflows only for members assigned to a manager."""
+    if employee.role != EmployeeRole.employee or not employee.manager_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="An assigned manager is required before submitting or viewing AI access requests.",
+        )
+    manager = employee.manager
+    if not manager or manager.company_id != employee.company_id or manager.role != EmployeeRole.manager:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your assigned manager is not valid.",
+        )
+    return employee

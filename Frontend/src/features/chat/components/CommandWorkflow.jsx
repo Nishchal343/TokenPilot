@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { AlertTriangle, Check, Clipboard, FileUp, Play, Send, X } from 'lucide-react'
+import { formatCurrency } from '../../../utils/formatters'
 
 const shellLanguages = new Set(['bash', 'sh', 'shell', 'zsh', 'powershell', 'ps', 'cmd', 'terminal', 'console', 'command'])
 const modifiesPattern = /(^|\s)(npm\s+(install|i|uninstall|update|run\s+(build|dev|start))|pip\s+(install|uninstall)|uv\s+(add|remove|sync)|docker\s+(build|run|compose|rm)|git\s+(clone|checkout|reset|clean|merge|rebase|commit|push|pull)|rm\s|del\s|mkdir\s|touch\s|echo\s+.*>|>)/i
@@ -31,6 +32,8 @@ export function CommandCard({ item, status = 'Pending', onCopy, onStatus }) {
   const copied = status === 'Copied'
   return <section className="tp-command-card"><header><div><b>Run this command</b><span className={`tp-command-status ${status.toLowerCase()}`}>{status}</span></div>{item.modifies && <small className="tp-command-warning"><AlertTriangle size={13}/> This command may modify files or dependencies.</small>}</header><pre>{item.command}</pre><p>{item.purpose}</p><footer><button onClick={onCopy}>{copied ? <Check size={14}/> : <Clipboard size={14}/>} {copied ? 'Copied' : 'Copy command'}</button>{status !== 'Success' && <button onClick={() => onStatus?.('Running')}><Play size={14}/> Mark running</button>}</footer></section>
 }
+
+export function CacheCandidate({ candidate, onReuse, onFresh }) { if (!candidate) return null; return <section className="tp-cache-card"><b>💡 Smart Token Saver</b><p>A similar request was detected.</p><div><span>Similarity <strong>{candidate.similarity}%</strong></span><span>Estimated tokens saved <strong>{candidate.tokens_saved}</strong></span><span>Estimated cost saved <strong>{formatCurrency(candidate.cost_saved)}</strong></span></div><footer><button onClick={onReuse}>⚡ Save Tokens</button><button onClick={onFresh}>↻ Generate Fresh Response</button></footer></section> }
 
 export default function CommandWorkflow({ command, status = 'Pending', onAnalyze, onStatus }) {
   const [logs, setLogs] = useState('')

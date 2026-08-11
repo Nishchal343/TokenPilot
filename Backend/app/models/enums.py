@@ -21,7 +21,9 @@ class InvitedByType(str, enum.Enum):
 
 class OfferedRole(str, enum.Enum):
     manager = "manager"
-    employee = "employee"
+    team_member = "team_member"
+    # Legacy source compatibility.  The persisted/API value is team_member.
+    employee = "team_member"
 
 
 class OTPPurpose(str, enum.Enum):

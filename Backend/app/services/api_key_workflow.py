@@ -51,7 +51,7 @@ def request_response(request: APIKeyRequest) -> dict:
         "company_id": request.company_id,
         "team_leader_id": request.team_leader_id,
         "employee_id": request.employee_id,
-        "employee_name": request.employee.name if request.employee else None,
+        "employee_name": ('manager' if request.employee_id == request.team_leader_id else 'member') if request.employee else None,
         "team_leader_name": request.team_leader.name if request.team_leader else None,
         "requested_tier": request.requested_tier,
         "requested_model": request.requested_model,
@@ -75,6 +75,25 @@ def ensure_rejection_reason(reason: str | None):
 def create_request(db: Session, employee: Employee, payload) -> APIKeyRequest:
     if not employee.company_id:
         raise HTTPException(status_code=400, detail="Join a company before requesting an AI API key.")
+
+    if employee.role == EmployeeRole.manager:
+        request = APIKeyRequest(
+            company_id=employee.company_id,
+            team_leader_id=employee.id,
+            employee_id=employee.id,
+            requested_tier=payload.requested_tier,
+            requested_model=payload.requested_model.strip(),
+            requested_budget=payload.requested_budget,
+            status=APIKeyRequestStatus.PENDING_COMPANY.value,
+            reason=payload.reason.strip(),
+        )
+        db.add(request)
+        db.flush()
+        add_audit(db, request, "manager", employee.id, "SUBMITTED", new_budget=payload.requested_budget)
+        notify_employee(db, employee, "AI API key request submitted", "Your request is pending company approval.", "api_key_request")
+        notify_company(employee.company, "Manager AI API key request needs approval", f"{employee.name} requested access to {request.requested_model}.")
+        return request
+
     if not employee.manager_id:
         raise HTTPException(status_code=400, detail="A team leader must be assigned before requesting an AI API key.")
     leader = db.query(Employee).filter(
@@ -106,12 +125,18 @@ def create_request(db: Session, employee: Employee, payload) -> APIKeyRequest:
 def create_company_api_key(db: Session, company, request: APIKeyRequest, provider: str, secret: str, final_budget: int, actor_id: int) -> APIKey:
     if request.status != APIKeyRequestStatus.PENDING_COMPANY.value:
         raise HTTPException(status_code=409, detail="Only requests pending company approval can be activated.")
+    model = request.requested_model.strip().lower()
+    provider_key = provider.strip().lower()
+    if model.startswith("gemini") and provider_key != "gemini":
+        raise HTTPException(status_code=400, detail="Gemini models require a Gemini provider/API key.")
+    if (model.startswith("claude") or model.startswith("anthropic")) and provider_key not in {"claude", "anthropic"}:
+        raise HTTPException(status_code=400, detail="Claude models require a Claude/Anthropic provider/API key.")
     api_key = APIKey(
         company_id=company.id,
         employee_id=request.employee_id,
         request_id=request.id,
         provider=provider,
-        model=request.requested_model,
+        model=request.requested_model.strip(),
         encrypted_api_key=encrypt_api_key(secret),
         budget_limit=final_budget,
         remaining_budget=final_budget,
