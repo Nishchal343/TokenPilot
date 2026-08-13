@@ -12,6 +12,7 @@ from app.models.workspace import ChatMessage, ChatSession, PersonalAPIKey, Works
 from app.schemas.workspace import ChatInput, FileInput, FileUpdate, PersonalKeyInput, RenameInput
 from app.ai import ChatService
 from app.ai.routing import ProviderCandidate
+from app.providers.registry import configured_model
 from app.cache import response_cache
 from app.services.api_key_workflow import _cipher
 from app.services.analytics_service import descendants
@@ -63,7 +64,7 @@ def source(db, actor, key_id=None, key_source=None):
         if not key: return None
         secret = _cipher().decrypt(key.encrypted_api_key.encode()).decode()
         _log_key_selection("organization", key.id, key.provider, key.model, secret)
-        return key.provider, key.model, secret, "organization", key.remaining_budget, None
+        return key.provider, configured_model(key.provider, key.model), secret, "organization", key.remaining_budget, None
 
     personal_query = owned(db.query(PersonalAPIKey).filter(PersonalAPIKey.is_active.is_(True)), PersonalAPIKey, actor)
     if key_id is not None and key_source == "personal":
@@ -72,7 +73,7 @@ def source(db, actor, key_id=None, key_source=None):
         if not personal: return None
         secret = _cipher().decrypt(personal.encrypted_api_key.encode()).decode()
         _log_key_selection("personal", personal.id, personal.provider, personal.model, secret)
-        return personal.provider, personal.model, secret, "personal", None, personal.api_base_url
+        return personal.provider, configured_model(personal.provider, personal.model), secret, "personal", None, personal.api_base_url
 
     if key_id is not None:
         # Backward compatibility for older clients that only send an ID.
@@ -80,19 +81,19 @@ def source(db, actor, key_id=None, key_source=None):
         if personal:
             secret = _cipher().decrypt(personal.encrypted_api_key.encode()).decode()
             _log_key_selection("personal", personal.id, personal.provider, personal.model, secret)
-            return personal.provider, personal.model, secret, "personal", None, personal.api_base_url
+            return personal.provider, configured_model(personal.provider, personal.model), secret, "personal", None, personal.api_base_url
         key = company_keys(db, actor).filter(APIKey.id == key_id).first()
         if key:
             secret = _cipher().decrypt(key.encrypted_api_key.encode()).decode()
             _log_key_selection("organization", key.id, key.provider, key.model, secret)
-            return key.provider, key.model, secret, "organization", key.remaining_budget, None
+            return key.provider, configured_model(key.provider, key.model), secret, "organization", key.remaining_budget, None
         return None
 
     key = company_keys(db, actor).first()
     if key:
         secret = _cipher().decrypt(key.encrypted_api_key.encode()).decode()
         _log_key_selection("organization", key.id, key.provider, key.model, secret)
-        return key.provider, key.model, secret, "organization", key.remaining_budget, None
+        return key.provider, configured_model(key.provider, key.model), secret, "organization", key.remaining_budget, None
 
     if key_id is None:
         personal_query = personal_query.order_by(PersonalAPIKey.is_default.desc(), PersonalAPIKey.last_used_at.desc().nullslast(), PersonalAPIKey.updated_at.desc())
@@ -100,17 +101,17 @@ def source(db, actor, key_id=None, key_source=None):
     if personal:
         secret = _cipher().decrypt(personal.encrypted_api_key.encode()).decode()
         _log_key_selection("personal", personal.id, personal.provider, personal.model, secret)
-        return personal.provider, personal.model, secret, "personal", None, personal.api_base_url
+        return personal.provider, configured_model(personal.provider, personal.model), secret, "personal", None, personal.api_base_url
     return None
 
 
 def credential_candidates(db, actor):
     candidates = []
     for key in company_keys(db, actor).all():
-        candidates.append(ProviderCandidate(key.provider, key.model, _cipher().decrypt(key.encrypted_api_key.encode()).decode(), "organization", key.id))
+        candidates.append(ProviderCandidate(key.provider, configured_model(key.provider, key.model), _cipher().decrypt(key.encrypted_api_key.encode()).decode(), "organization", key.id))
     personal = owned(db.query(PersonalAPIKey).filter(PersonalAPIKey.is_active.is_(True)), PersonalAPIKey, actor).order_by(PersonalAPIKey.is_default.desc(), PersonalAPIKey.updated_at.desc()).all()
     for key in personal:
-        candidates.append(ProviderCandidate(key.provider, key.model, _cipher().decrypt(key.encrypted_api_key.encode()).decode(), "personal", key.id, key.api_base_url))
+        candidates.append(ProviderCandidate(key.provider, configured_model(key.provider, key.model), _cipher().decrypt(key.encrypted_api_key.encode()).decode(), "personal", key.id, key.api_base_url))
     return candidates
 
 
@@ -129,7 +130,8 @@ def set_personal_key(data: PersonalKeyInput, db: Session = Depends(get_db), payl
     if not record:
         record = PersonalAPIKey(owner_type=actor[0], owner_id=actor[1], provider=data.provider, model=data.model, label=data.label or f"{data.provider} · {data.model}", api_base_url=str(data.api_base_url) if data.api_base_url else None, encrypted_api_key="")
         db.add(record)
-    record.provider, record.model, record.label, record.api_base_url, record.encrypted_api_key, record.is_active = data.provider, data.model, data.label or record.label or f"{data.provider} · {data.model}", str(data.api_base_url) if data.api_base_url else None, _cipher().encrypt(data.api_key.get_secret_value().strip().encode()).decode(), True
+    effective_model = configured_model(data.provider, data.model)
+    record.provider, record.model, record.label, record.api_base_url, record.encrypted_api_key, record.is_active = data.provider, effective_model, data.label or record.label or f"{data.provider} · {effective_model}", str(data.api_base_url) if data.api_base_url else None, _cipher().encrypt(data.api_key.get_secret_value().strip().encode()).decode(), True
     db.commit()
     return {"status": "connected", "provider": record.provider, "model": record.model, "source": "personal"}
 
@@ -141,7 +143,7 @@ def add_personal_key(data: PersonalKeyInput, db: Session = Depends(get_db), payl
         owner_type=actor[0],
         owner_id=actor[1],
         provider=data.provider,
-        model=data.model,
+        model=configured_model(data.provider, data.model),
         label=data.label or f"{data.provider} · {data.model}",
         api_base_url=str(data.api_base_url) if data.api_base_url else None,
         encrypted_api_key=_cipher().encrypt(data.api_key.get_secret_value().strip().encode()).decode(),
@@ -201,8 +203,7 @@ def chats(q: str | None = None, db: Session = Depends(get_db), payload=Depends(g
 
 @router.post("/chats")
 def create_chat(db: Session = Depends(get_db), payload=Depends(get_current_token_payload)):
-    actor = principal(payload, db); chat = ChatSession(owner_type=actor[0], owner_id=actor[1], company_id=actor[2])
-    db.add(chat); db.commit(); db.refresh(chat); return {"id": chat.id, "title": chat.title}
+    raise HTTPException(422, "A conversation is created when its first message is submitted.")
 
 
 @router.get("/chats/{chat_id}")
@@ -226,28 +227,41 @@ def delete_chat(chat_id: int, db: Session = Depends(get_db), payload=Depends(get
     db.query(ChatMessage).filter(ChatMessage.session_id == chat.id).delete(); db.delete(chat); db.commit(); return {"ok": True}
 
 
-@router.post("/chats/{chat_id}/messages")
-def send_message(chat_id: int, data: ChatInput, db: Session = Depends(get_db), payload=Depends(get_current_token_payload)):
-    actor = principal(payload, db); chat = owned(db.query(ChatSession).filter(ChatSession.id == chat_id), ChatSession, actor).first()
-    if not chat: raise HTTPException(404, "Chat not found")
+def _send_message(chat_id: int | None, data: ChatInput, db: Session, payload):
+    actor = principal(payload, db)
+    chat = owned(db.query(ChatSession).filter(ChatSession.id == chat_id), ChatSession, actor).first() if chat_id is not None else None
+    if chat_id is not None and not chat: raise HTTPException(404, "Chat not found")
 
     selected = source(db, actor, data.key_id, data.key_source)
     if not selected:
         raise HTTPException(428, "Add a personal API key or request organization access to start chatting.")
+    if chat is None:
+        chat = ChatSession(owner_type=actor[0], owner_id=actor[1], company_id=actor[2])
+        db.add(chat); db.flush()
     selected_candidate = ProviderCandidate(selected[0], selected[1], selected[2], selected[3], data.key_id, selected[5])
     history = [{"role": item.role, "content": item.content, "images": item.attachments or []} for item in db.query(ChatMessage).filter(ChatMessage.session_id == chat.id).order_by(ChatMessage.created_at, ChatMessage.id).all()]
     images = [image.model_dump() for image in data.images]
     user_content = data.content.strip() or ("[Image attachment]" if data.images else "[Attached document]")
     documents = [document.model_dump() for document in data.documents]
     code_files = [code_file.model_dump() for code_file in data.code_files]
-    result = ChatService().generate(user_content, history, images, selected_candidate, credential_candidates(db, actor), documents, code_files, cache_scope=f"{actor[0]}:{actor[1]}")
+    result = ChatService().generate(user_content, history, images, selected_candidate, credential_candidates(db, actor), documents, code_files, cache_scope=f"{actor[0]}:{actor[1]}", tenant_scope=f"company:{actor[2]}" if actor[2] else f"{actor[0]}:{actor[1]}")
     user_message = ChatMessage(session_id=chat.id, role="user", content=user_content, attachments=images or None)
     assistant_message = ChatMessage(session_id=chat.id, role="assistant", content=result.content, provider=result.provider, model=result.model, api_key_id=data.key_id, api_key_source=data.key_source, token_usage=result.estimated_tokens, estimated_cost=str(result.optimization.get("cost_after", 0)), latency_ms=result.latency_ms, optimization_report=result.optimization)
     db.add_all([user_message, assistant_message])
     if chat.title == "New conversation":
         chat.title = user_content[:60]
     db.commit(); db.refresh(assistant_message)
-    return {"id": assistant_message.id, "role": "assistant", "content": result.content, "images": [], "provider": result.provider, "model": result.model, "api_key_id": assistant_message.api_key_id, "api_key_source": assistant_message.api_key_source, "token_usage": result.estimated_tokens, "estimated_cost": assistant_message.estimated_cost, "latency_ms": result.latency_ms, "optimization": result.optimization, "request_id": result.request_id, "complexity": result.complexity, "confidence": result.confidence}
+    return {"id": assistant_message.id, "chat_id": chat.id, "role": "assistant", "content": result.content, "images": [], "provider": result.provider, "model": result.model, "api_key_id": assistant_message.api_key_id, "api_key_source": assistant_message.api_key_source, "token_usage": result.estimated_tokens, "estimated_cost": assistant_message.estimated_cost, "latency_ms": result.latency_ms, "optimization": result.optimization, "request_id": result.request_id, "complexity": result.complexity, "confidence": result.confidence}
+
+
+@router.post("/chats/messages")
+def send_message_to_new_chat(data: ChatInput, db: Session = Depends(get_db), payload=Depends(get_current_token_payload)):
+    return _send_message(None, data, db, payload)
+
+
+@router.post("/chats/{chat_id}/messages")
+def send_message(chat_id: int, data: ChatInput, db: Session = Depends(get_db), payload=Depends(get_current_token_payload)):
+    return _send_message(chat_id, data, db, payload)
 
 @router.get("/files")
 def files(db: Session = Depends(get_db), payload=Depends(get_current_token_payload)):
@@ -327,6 +341,7 @@ def optimization_analytics(db: Session = Depends(get_db), payload=Depends(get_cu
     code_cost_saved = sum(float(item.get("code_cost_saved", 0)) for item in reports)
     code_requests = sum(1 for item in reports if item.get("code_original_tokens", 0) > 0)
     cache_stats = response_cache.stats()
+    cache_dashboard = response_cache.tenant_stats(f"company:{actor[2]}" if actor[2] else f"{actor[0]}:{actor[1]}")
     return {
         "original_tokens": original_tokens,
         "optimized_tokens": optimized_tokens,
@@ -377,13 +392,14 @@ def optimization_analytics(db: Session = Depends(get_db), payload=Depends(get_cu
         "ide_requests": 0,
         "total_tokens_processed": original_tokens,
         "average_tokens_saved_per_request": round(saved_tokens / total, 2) if total else 0,
-        "cache_hits": cache_stats["cache_hits"],
-        "cache_misses": cache_stats["cache_misses"],
-        "semantic_cache_hits": cache_stats["semantic_cache_hits"],
-        "semantic_cache_misses": cache_stats["semantic_cache_misses"],
-        "cache_hit_rate": cache_stats["cache_hit_rate"],
-        "api_calls_avoided": cache_stats["api_calls_avoided"],
+        "cache_hits": cache_dashboard["total_optimization"]["cache_hits"],
+        "cache_misses": cache_dashboard["global_cache"]["misses"] + cache_dashboard["private_cache"]["misses"],
+        "semantic_cache_hits": cache_dashboard["global_cache"]["semantic_hits"] + cache_dashboard["private_cache"]["semantic_hits"],
+        "semantic_cache_misses": cache_dashboard["global_cache"]["semantic_misses"] + cache_dashboard["private_cache"]["semantic_misses"],
+        "cache_hit_rate": cache_dashboard["total_optimization"]["cache_hit_rate"],
+        "api_calls_avoided": cache_dashboard["total_optimization"]["api_calls_avoided"],
         "average_response_time_saved_ms": cache_stats["average_response_time_saved_ms"],
+        "cache_dashboard": cache_dashboard,
         "breakdown": {
             "prompt": sum(int(item.get("prompt_tokens_saved", 0)) for item in reports),
             "context": context_saved_tokens,

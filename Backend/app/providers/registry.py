@@ -8,6 +8,19 @@ from app.config.optimization import GEMINI_FALLBACK_MODEL
 logger = logging.getLogger(__name__)
 
 
+def configured_model(provider: str, model: str | None) -> str:
+    value = (model or "").strip().removeprefix("models/")
+    provider_name = provider.strip().lower()
+    if provider_name == "gemini" and (not value.lower().startswith("gemini-") or value.lower() == "gemini-2.5-flash"):
+        logger.warning("Gemini model normalized requested_model=%s effective_model=%s", value or "<missing>", GEMINI_FALLBACK_MODEL)
+        return GEMINI_FALLBACK_MODEL
+    if provider_name == "groq" and (not value or value.lower().startswith(("gpt-", "gemini-", "claude-"))):
+        fallback = "llama-3.3-70b-versatile"
+        logger.warning("Groq model normalized requested_model=%s effective_model=%s", value or "<missing>", fallback)
+        return fallback
+    return value
+
+
 class ProviderRequestError(Exception):
     def __init__(self, provider: str, status_code: int | None = None, *, model=None, response_body=None, debug_context=None):
         self.provider = provider
@@ -57,10 +70,7 @@ class OpenAICompatibleProvider(AIProvider):
 
 class GeminiProvider(AIProvider):
     def generate(self, api_key, model, messages):
-        model = model.strip().removeprefix("models/")
-        if not model.lower().startswith("gemini-") or model.lower() == "gemini-2.5-flash":
-            logger.warning("Gemini model migration requested_model=%s effective_model=%s", model, GEMINI_FALLBACK_MODEL)
-            model = GEMINI_FALLBACK_MODEL
+        model = configured_model("gemini", model)
         contents = []
         for item in messages:
             role = "model" if item["role"] == "assistant" else "user"

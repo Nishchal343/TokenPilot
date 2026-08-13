@@ -3,7 +3,12 @@ import { Bot, Check, Copy, Pencil, RefreshCw, ThumbsDown, ThumbsUp } from 'lucid
 import { CacheCandidate, CommandCard, parseCommands } from './CommandWorkflow'
 
 function Markdown({ value }) { const parts = String(value || '').split(/```([\s\S]*?)```/g); return <div className="tp-markdown">{parts.map((part, index) => index % 2 ? <pre key={index}><code>{part.replace(/^\w+\n/, '')}</code><button onClick={() => navigator.clipboard?.writeText(part)}><Copy size={13}/></button></pre> : part.split('\n').map((line, i) => <p key={`${index}-${i}`}>{line || ' '}</p>))}</div> }
-function TokenUsage({ report }) { if (!report || report.original_tokens == null) return null; return <div className="tp-token-usage"><span>Original: <b>{Number(report.original_tokens).toLocaleString()}</b></span><span>Used: <b>{Number(report.optimized_tokens || 0).toLocaleString()}</b></span><span>Saved: <b>{Number(report.reduction_percent || 0).toFixed(2)}%</b></span>{report.cache_status && <span>Cache: <b>{report.cache_status}</b></span>}</div> }
+function TokenUsage({ report }) {
+  if (!report) return null
+  if (report.cache_status === 'HIT') return <div className="tp-token-usage"><span>Cache: <b>HIT</b></span></div>
+  if (report.original_tokens == null) return null
+  return <div className="tp-token-usage"><span>Original: <b>{Number(report.original_tokens).toLocaleString()}</b></span><span>Used: <b>{Number(report.optimized_tokens || 0).toLocaleString()}</b></span><span>Saved: <b>{Number(report.saved_tokens ?? Math.max(0, Number(report.original_tokens) - Number(report.optimized_tokens || 0))).toLocaleString()}</b></span><span>Saved: <b>{Number(report.reduction_percent || 0).toFixed(2)}%</b></span>{report.cache_status && <span>Cache: <b>{report.cache_status}</b></span>}</div>
+}
 
 export default function MessageList({ messages, loading, onEdit, onRegenerate, bottomRef, commandStatuses = {}, onCommandStatus, cacheCandidate, onReuseCache, onFreshCache }) {
   const [copied, setCopied] = useState(null)

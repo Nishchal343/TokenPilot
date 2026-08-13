@@ -25,6 +25,7 @@ class ContextSelection:
     messages_removed: int
     messages_preserved: int
     optimization_ms: int
+    compression_applied: bool = False
 
     def as_report(self, provider: str, model: str) -> dict:
         return {
@@ -38,6 +39,9 @@ class ContextSelection:
             "context_messages_removed": self.messages_removed,
             "context_messages_preserved": self.messages_preserved,
             "context_optimization_ms": self.optimization_ms,
+            "context_messages_before": self.messages_preserved + self.messages_removed,
+            "context_messages_after": self.messages_preserved,
+            "context_compression_applied": self.compression_applied,
             "context_provider": provider,
             "context_model": model,
             "stages": {"context": {"saved_tokens": self.saved_tokens}},
@@ -91,7 +95,7 @@ class ContextOptimizer:
                 used += cost
 
         # Context must retain conversation order for provider APIs.
-        selected.sort(key=lambda item: history.index(item) if item in history else -1)
+        selected.sort(key=lambda item: next((index for index, candidate in enumerate(history) if candidate is item), -1))
         optimized_tokens = sum(self._message_tokens(item, provider, model) for item in selected)
         saved = max(0, original_tokens - optimized_tokens)
         before = estimate_input_cost(original_tokens, provider, model)
@@ -109,6 +113,64 @@ class ContextOptimizer:
             messages_preserved=len(selected),
             optimization_ms=round((time.perf_counter() - started) * 1000),
         )
+
+    def compress_context(self, selection: ContextSelection, provider: str, model: str) -> ContextSelection:
+        """Remove only exact duplicate user/assistant turns from selected history.
+
+        This is deliberately deterministic and conservative. It never rewrites
+        message content, so code, JSON, SQL, URLs, and technical identifiers
+        remain byte-for-byte unchanged. If compression fails or is not smaller,
+        the original selection is returned.
+        """
+        messages = list(selection.messages)
+        if len(messages) < 4:
+            return selection
+        try:
+            duplicate_pairs: dict[tuple[str, str], int] = {}
+            pair_indexes: set[int] = set()
+            for index in range(len(messages) - 1):
+                user, assistant = messages[index:index + 2]
+                if user.get("role") != "user" or assistant.get("role") != "assistant":
+                    continue
+                pair = (self._message_fingerprint(user), self._message_fingerprint(assistant))
+                if pair in duplicate_pairs:
+                    first_index = duplicate_pairs[pair]
+                    pair_indexes.update({first_index, first_index + 1})
+                else:
+                    duplicate_pairs[pair] = index
+            if not pair_indexes:
+                return selection
+            compressed_messages = [message for index, message in enumerate(messages) if index not in pair_indexes]
+            if not compressed_messages:
+                return selection
+            compressed_tokens = sum(self._message_tokens(item, provider, model) for item in compressed_messages)
+            if compressed_tokens >= selection.optimized_tokens:
+                return selection
+            before = estimate_input_cost(selection.original_tokens, provider, model)
+            after = estimate_input_cost(compressed_tokens, provider, model)
+            return ContextSelection(
+                messages=compressed_messages,
+                original_tokens=selection.original_tokens,
+                optimized_tokens=compressed_tokens,
+                saved_tokens=max(0, selection.original_tokens - compressed_tokens),
+                reduction_percent=round((max(0, selection.original_tokens - compressed_tokens) / selection.original_tokens) * 100, 2) if selection.original_tokens else 0.0,
+                cost_before=before,
+                cost_after=after,
+                cost_saved=round(max(0.0, before - after), 8),
+                messages_removed=selection.messages_removed + len(messages) - len(compressed_messages),
+                messages_preserved=len(compressed_messages),
+                optimization_ms=selection.optimization_ms,
+                compression_applied=True,
+            )
+        except Exception:
+            return selection
+
+    @staticmethod
+    def _message_fingerprint(message: dict) -> str:
+        import hashlib
+        import json
+        value = {"role": message.get("role"), "content": message.get("content", ""), "images": message.get("images") or message.get("attachments") or []}
+        return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode()).hexdigest()
 
     def calculate_statistics(self, history: list[dict], selected: list[dict], current_prompt: str, provider: str, model: str) -> ContextSelection:
         original_tokens = sum(self._message_tokens(item, provider, model) for item in history)

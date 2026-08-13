@@ -4,8 +4,8 @@ from app.ai.service import ChatService
 from unittest.mock import patch
 
 
-def select(history, prompt, limit=1000, minimum=0):
-    return ContextOptimizer(max_tokens=limit, minimum_messages=minimum, threshold=0.08).select_context(history, prompt, "openai", "gpt-4o-mini")
+def select(history, prompt, limit=1000, minimum=0, threshold=0.08):
+    return ContextOptimizer(max_tokens=limit, minimum_messages=minimum, threshold=threshold).select_context(history, prompt, "openai", "gpt-4o-mini")
 
 
 def test_short_conversation_preserves_context_in_order():
@@ -85,3 +85,34 @@ def test_chat_report_uses_overall_prompt_plus_context_totals():
     assert report["optimized_tokens"] == report["prompt_optimized_tokens"] + report["optimized_context_tokens"]
     assert report["saved_tokens"] == report["prompt_tokens_saved"] + report["context_saved_tokens"]
     assert report["saved_tokens"] > report["prompt_tokens_saved"]
+
+
+def test_compress_context_removes_exact_duplicate_turn_but_preserves_content():
+    history = [
+        {"role": "user", "content": "Explain REST APIs."},
+        {"role": "assistant", "content": "REST APIs expose resources over HTTP."},
+        {"role": "user", "content": "Explain REST APIs."},
+        {"role": "assistant", "content": "REST APIs expose resources over HTTP."},
+    ]
+    selected = select(history, "Compare the REST API concepts.", limit=1000, minimum=0, threshold=0.0)
+    result = ContextOptimizer().compress_context(selected, "openai", "gpt-4o-mini")
+    assert result.compression_applied is True
+    assert result.optimized_tokens < result.original_tokens
+    assert len(result.messages) == 2
+    assert result.messages[0]["content"] == history[2]["content"]
+    assert result.messages[1]["content"] == history[3]["content"]
+
+
+def test_compress_context_keeps_context_dependent_history_and_technical_content():
+    code = "```python\nprimary_key = 1\n```"
+    history = [
+        {"role": "user", "content": "What is a database primary key?"},
+        {"role": "assistant", "content": "It identifies a row."},
+        {"role": "user", "content": "What are its advantages?"},
+        {"role": "assistant", "content": code},
+    ]
+    selected = select(history, "Explain the advantages with an example.", limit=1000, minimum=0, threshold=0.0)
+    result = ContextOptimizer().compress_context(selected, "openai", "gpt-4o-mini")
+    assert result.compression_applied is False
+    assert result.messages == history
+    assert code in result.messages[-1]["content"]

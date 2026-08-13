@@ -37,6 +37,33 @@ def test_provider_and_model_are_part_of_cache_key():
     assert make_key(cache, model="gpt-4o-mini") != make_key(cache, model="gemini-2.5-pro")
 
 
+def test_global_and_private_metrics_are_separated_by_tenant():
+    cache = ResponseCache()
+    global_key = make_key(cache, prompt="shared", provider="openai")
+    private_key = make_key(cache, prompt="private", provider="openai")
+    cache.store(global_key, "shared response", "openai", "gpt-4o-mini", 100, {"optimized_tokens": 12}, cache_tier="global", tenant_scope="company:1")
+    cache.store(private_key, "private response", "openai", "gpt-4o-mini", 100, {"optimized_tokens": 8}, cache_tier="private", tenant_scope="company:1")
+    assert cache.lookup(global_key, cache_tier="global", tenant_scope="company:1")
+    assert cache.lookup(private_key, cache_tier="private", tenant_scope="company:1")
+
+    stats = cache.tenant_stats("company:1")
+    assert stats["global_cache"]["exact_hits"] == 1
+    assert stats["global_cache"]["tokens_saved"] == 12
+    assert stats["private_cache"]["exact_hits"] == 1
+    assert stats["private_cache"]["tokens_saved"] == 8
+    assert cache.tenant_stats("company:2")["total_optimization"]["cache_hits"] == 0
+
+
+def test_lookup_rejects_wrong_tier_or_tenant_even_when_key_matches():
+    cache = ResponseCache()
+    key = make_key(cache, prompt="scoped")
+    context_key = cache.context_key_for(context=[], documents=[], code=[], provider="openai", model="gpt-4o-mini", scope="company:1")
+    cache.store(key, "company one answer", "openai", "gpt-4o-mini", 80, {}, semantic_query="scoped", context_key=context_key, cache_tier="global", tenant_scope="company:1")
+
+    assert cache.lookup(key, semantic_query="scoped", context_key=context_key, cache_tier="global", tenant_scope="company:2") is None
+    assert cache.lookup(key, semantic_query="scoped", context_key=context_key, cache_tier="private", tenant_scope="company:1") is None
+
+
 def test_semantically_normalized_query_reuses_a_context_scoped_entry():
     cache = ResponseCache(semantic_threshold=0.92)
     context_key = cache.context_key_for(context=[], documents=[], code=[], provider="openai", model="gpt-4o-mini", scope="company:1")
@@ -188,6 +215,55 @@ def test_chat_service_reuses_exact_message_after_multiple_consecutive_retries():
 
     assert len(calls) == 1
     assert third.optimization["cache_status"] == "HIT"
+
+
+def test_self_contained_retries_stay_cacheable_across_five_turns():
+    cache = ResponseCache(ttl_seconds=60)
+    service = ChatService(cache=cache)
+    selected = ProviderCandidate("openai", "gpt-4o-mini", "test-key", "personal", 1)
+    calls = []
+
+    class FakeProvider:
+        def generate(self, api_key, model, messages):
+            calls.append(messages)
+            return "stable response"
+
+    history = []
+    with patch("app.ai.service.provider_for", return_value=FakeProvider()):
+        results = []
+        for _ in range(5):
+            result = service.generate("Explain what a REST API is and how it works.", history, [], selected, [selected], cache_scope="employee:7")
+            results.append(result)
+            history.extend([
+                {"role": "user", "content": "Explain what a REST API is and how it works.", "images": []},
+                {"role": "assistant", "content": result.content, "images": []},
+            ])
+
+    assert [result.optimization["cache_status"] for result in results] == ["MISS", "HIT", "HIT", "HIT", "HIT"]
+    assert len(calls) == 1
+
+
+def test_context_dependent_retries_keep_conversation_in_cache_identity():
+    cache = ResponseCache(ttl_seconds=60)
+    service = ChatService(cache=cache)
+    selected = ProviderCandidate("openai", "gpt-4o-mini", "test-key", "personal", 1)
+    calls = []
+
+    class FakeProvider:
+        def generate(self, api_key, model, messages):
+            calls.append(messages)
+            return f"response {len(calls)}"
+
+    history = [{"role": "user", "content": "What is a binary tree?", "images": []}, {"role": "assistant", "content": "A tree.", "images": []}]
+    prompt = "What are its advantages?"
+    with patch("app.ai.service.provider_for", return_value=FakeProvider()):
+        first = service.generate(prompt, history, [], selected, [selected], cache_scope="employee:7")
+        repeated_history = history + [{"role": "user", "content": prompt, "images": []}, {"role": "assistant", "content": first.content, "images": []}]
+        second = service.generate(prompt, repeated_history, [], selected, [selected], cache_scope="employee:7")
+
+    assert first.optimization["cache_status"] == "MISS"
+    assert second.optimization["cache_status"] == "MISS"
+    assert len(calls) == 2
 
 
 def test_cache_miss_makes_only_one_provider_attempt_even_with_fallbacks():
