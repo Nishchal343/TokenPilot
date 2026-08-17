@@ -95,9 +95,13 @@ def company_api_key_requests(db: Session = Depends(get_db), company=Depends(get_
 
 @router.patch("/company/api-key-requests/{request_id}", response_model=APIKeyRequestResponse)
 def act_on_company_request(request_id: int, payload: CompanyAPIKeyAction, db: Session = Depends(get_db), company=Depends(get_current_company)):
-    request = db.query(APIKeyRequest).filter(APIKeyRequest.id == request_id, APIKeyRequest.company_id == company.id).first()
+    request = db.query(APIKeyRequest).filter(APIKeyRequest.id == request_id, APIKeyRequest.company_id == company.id).with_for_update().first()
     if not request:
         raise HTTPException(status_code=404, detail="API key request not found.")
+    if payload.action == "approve" and request.status == APIKeyRequestStatus.APPROVED.value:
+        return request_response(request)
+    if payload.action == "reject" and request.status == APIKeyRequestStatus.REJECTED.value:
+        return request_response(request)
     if payload.action == "reject":
         if request.status != APIKeyRequestStatus.PENDING_COMPANY.value:
             raise HTTPException(status_code=409, detail="Only pending company requests can be rejected.")

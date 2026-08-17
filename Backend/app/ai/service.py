@@ -56,8 +56,11 @@ class ChatService:
         """
         result = list(history)
         removed = 0
-        if not ChatService._is_self_contained_prompt(current_prompt):
-            return result, removed
+        # An exact repeated prompt is safe to reuse even when the prompt
+        # contains words such as "this" or "also" that make the lightweight
+        # standalone heuristic classify it as context-dependent. Keeping the
+        # previous identical turn in the cache context makes every retry look
+        # like a new request and prevents both private and global cache hits.
         while len(result) >= 2 and result[-2].get("role") == "user" and result[-1].get("role") == "assistant" and str(result[-2].get("content", "")).strip() == current_prompt.strip():
             result = result[:-2]
             removed += 1

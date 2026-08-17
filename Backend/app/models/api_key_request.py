@@ -13,6 +13,7 @@ class APIKeyRequest(Base):
     team_leader_id = Column(Integer, ForeignKey("employees.id"), nullable=False, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False, index=True)
     requested_tier = Column(String(20), nullable=False)
+    requested_provider = Column(String(50), nullable=False, default="OpenAI")
     requested_model = Column(String(120), nullable=False)
     requested_budget = Column(Integer, nullable=False)
     leader_modified_budget = Column(Integer, nullable=True)

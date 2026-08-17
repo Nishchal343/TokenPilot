@@ -10,6 +10,7 @@ Provider = Literal["OpenAI", "Gemini", "Claude", "Groq", "Azure OpenAI", "OpenRo
 
 class APIKeyRequestCreate(BaseModel):
     requested_tier: Tier
+    requested_provider: Provider
     requested_model: str = Field(..., min_length=1, max_length=120)
     requested_budget: int = Field(..., gt=0, le=2_000_000_000)
     reason: str = Field(..., min_length=1, max_length=2000)
@@ -44,6 +45,7 @@ class APIKeyRequestResponse(BaseModel):
     employee_name: str | None = None
     team_leader_name: str | None = None
     requested_tier: str
+    requested_provider: str
     requested_model: str
     requested_budget: int
     leader_modified_budget: int | None

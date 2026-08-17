@@ -54,6 +54,7 @@ def request_response(request: APIKeyRequest) -> dict:
         "employee_name": ('manager' if request.employee_id == request.team_leader_id else 'member') if request.employee else None,
         "team_leader_name": request.team_leader.name if request.team_leader else None,
         "requested_tier": request.requested_tier,
+        "requested_provider": request.requested_provider,
         "requested_model": request.requested_model,
         "requested_budget": request.requested_budget,
         "leader_modified_budget": request.leader_modified_budget,
@@ -82,6 +83,7 @@ def create_request(db: Session, employee: Employee, payload) -> APIKeyRequest:
             team_leader_id=employee.id,
             employee_id=employee.id,
             requested_tier=payload.requested_tier,
+            requested_provider=payload.requested_provider,
             requested_model=payload.requested_model.strip(),
             requested_budget=payload.requested_budget,
             status=APIKeyRequestStatus.PENDING_COMPANY.value,
@@ -109,6 +111,7 @@ def create_request(db: Session, employee: Employee, payload) -> APIKeyRequest:
         team_leader_id=leader.id,
         employee_id=employee.id,
         requested_tier=payload.requested_tier,
+        requested_provider=payload.requested_provider,
         requested_model=payload.requested_model.strip(),
         requested_budget=payload.requested_budget,
         status=APIKeyRequestStatus.PENDING_TEAM_LEADER.value,
@@ -127,6 +130,8 @@ def create_company_api_key(db: Session, company, request: APIKeyRequest, provide
         raise HTTPException(status_code=409, detail="Only requests pending company approval can be activated.")
     model = request.requested_model.strip().lower()
     provider_key = provider.strip().lower()
+    if provider_key != request.requested_provider.strip().lower():
+        raise HTTPException(status_code=400, detail=f"This request is for {request.requested_provider}; activate it with that provider.")
     if model.startswith("gemini") and provider_key != "gemini":
         raise HTTPException(status_code=400, detail="Gemini models require a Gemini provider/API key.")
     if (model.startswith("claude") or model.startswith("anthropic")) and provider_key not in {"claude", "anthropic"}:
