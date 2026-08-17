@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tokenpilot}
+      POSTGRES_USER: ${POSTGRES_USER:-tokenpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [tokenpilot]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: { context: ./Backend }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-tokenpilot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tokenpilot}}"
+    expose: ["8000"]
+    volumes:
+      - uploads_data:/app/uploads
+      - cache_data:/app/data
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [tokenpilot]
+
+  frontend:
+    build:
+      context: ./Frontend
+      args:
+        VITE_API_URL: "${VITE_API_URL:-}"
+    restart: unless-stopped
+    ports: ["${PORT:-80}:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+    networks: [tokenpilot]
+
+volumes:
+  postgres_data:
+  uploads_data:
+  cache_data:
+networks:
+  tokenpilot:

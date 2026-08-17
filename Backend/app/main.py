@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from sqlalchemy import text
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -45,3 +46,11 @@ app.include_router(workspace_router)
 @app.get("/")
 def root():
     return {"message": "Backend Running Successfully"}
+
+
+@app.get("/health")
+def health():
+    from app.core.database import engine
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
+    return {"status": "ok"}

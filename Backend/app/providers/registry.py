@@ -14,8 +14,12 @@ def configured_model(provider: str, model: str | None) -> str:
     if provider_name == "gemini" and (not value.lower().startswith("gemini-") or value.lower() == "gemini-2.5-flash"):
         logger.warning("Gemini model normalized requested_model=%s effective_model=%s", value or "<missing>", GEMINI_FALLBACK_MODEL)
         return GEMINI_FALLBACK_MODEL
+    if provider_name == "groq" and value.lower() in {"llama-3.3-70b-versatile", "llama-3.1-8b-instant"}:
+        fallback = "openai/gpt-oss-120b"
+        logger.warning("Groq deprecated model normalized requested_model=%s effective_model=%s", value, fallback)
+        return fallback
     if provider_name == "groq" and (not value or value.lower().startswith(("gpt-", "gemini-", "claude-"))):
-        fallback = "llama-3.3-70b-versatile"
+        fallback = "openai/gpt-oss-120b"
         logger.warning("Groq model normalized requested_model=%s effective_model=%s", value or "<missing>", fallback)
         return fallback
     return value
