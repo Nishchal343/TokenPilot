@@ -14,6 +14,14 @@ import './chat-controls.css'
 
 const prompts = ['Explain', 'Fix', 'Refactor', 'Tests', 'Review', 'Optimize', 'Generate docs']
 
+const modelHint = (provider, model) => {
+  const value = String(model || '').trim().toLowerCase()
+  if (provider === 'Groq' && ['groq', 'openai', 'gpt', 'llama'].includes(value)) return 'Invalid Groq model ID. Try openai/gpt-oss-120b or openai/gpt-oss-20b.'
+  if (provider === 'Gemini' && !value.startsWith('gemini-')) return 'Gemini model IDs must start with gemini-.'
+  if (provider === 'Claude' && !value.startsWith('claude-')) return 'Claude model IDs must start with claude-.'
+  return ''
+}
+
 const providerErrorText = error => {
   const detail = error?.response?.data?.detail
   if (typeof detail === 'string') return detail
@@ -27,7 +35,7 @@ const providerErrorText = error => {
 
 function KeySetup({ onDone, onCancel }) {
   const [form, setForm] = useState({ provider:'OpenAI', model:'gpt-4o-mini', api_key:'' }); const [saving, setSaving] = useState(false); const [error, setError] = useState('')
-  const save = async event => { event.preventDefault(); setSaving(true); try { await workspaceApi.personalKey(form); await onDone() } catch (requestError) { setError(requestError.response?.data?.detail || 'Could not save the provider connection.') } finally { setSaving(false) } }
+  const save = async event => { event.preventDefault(); const invalidModel = modelHint(form.provider, form.model); if (invalidModel) { setError(invalidModel); return } setSaving(true); try { await workspaceApi.personalKey(form); await onDone() } catch (requestError) { setError(requestError.response?.data?.detail || 'Could not save the provider connection.') } finally { setSaving(false) } }
   return <div className="tp-modal-backdrop"><form className="tp-key-setup" onSubmit={save}><header><h2>Add provider connection</h2>{onCancel && <button type="button" onClick={onCancel}><X size={16}/></button>}</header><label>Provider<select value={form.provider} onChange={event => setForm(current => ({ ...current, provider:event.target.value, model:event.target.value === 'Gemini' ? 'gemini-3.6-flash' : 'gpt-4o-mini' }))}><option>OpenAI</option><option>Gemini</option><option>Claude</option><option>Groq</option></select></label><label>Model<input value={form.model} onChange={event => setForm(current => ({ ...current, model:event.target.value }))} required/></label><label>API key<input type="password" value={form.api_key} onChange={event => setForm(current => ({ ...current, api_key:event.target.value }))} required/></label>{error && <small className="tp-form-error">{String(error)}</small>}<footer>{onCancel && <button type="button" onClick={onCancel}>Cancel</button>}<button className="tp-primary" disabled={saving}>{saving ? 'Saving…' : 'Save connection'}</button></footer></form></div>
 }
 

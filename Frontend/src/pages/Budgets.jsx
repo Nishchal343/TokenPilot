@@ -80,9 +80,9 @@ function CompanyApprovalCenter() {
 
   const approve = request => {
     setWorking(request.id)
-    apiKeyRequestApi.companyAction(request.id, { action: 'approve', provider: providerForModel(request.requested_model), api_key: form.api_key, final_budget: Number(form.final_budget || request.leader_modified_budget || request.requested_budget) })
+    apiKeyRequestApi.companyAction(request.id, { action: 'approve', provider: request.requested_provider || form.provider, api_key: form.api_key, final_budget: Number(form.final_budget || request.leader_modified_budget || request.requested_budget) })
       .then(() => { showToast('success', 'API key activated and access granted.'); setSelected(null); setForm({ provider: 'OpenAI', api_key: '', final_budget: '' }); load() })
-      .catch(err => showToast('error', err.response?.data?.detail || 'Unable to approve request.'))
+      .catch(err => { if (err.response?.status === 409) { load(); showToast('success', 'This request was already processed.'); return } showToast('error', err.response?.data?.detail || 'Unable to approve request.') })
       .finally(() => setWorking(null))
   }
   const reject = request => { const reason = window.prompt('Rejection reason is required:'); if (!reason?.trim()) return; setWorking(request.id); apiKeyRequestApi.companyAction(request.id, { action: 'reject', reason }).then(() => { showToast('success', 'Request rejected.'); load() }).catch(err => showToast('error', err.response?.data?.detail || 'Unable to reject request.')).finally(() => setWorking(null)) }

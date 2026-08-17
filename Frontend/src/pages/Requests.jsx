@@ -5,13 +5,23 @@ import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/Loading'
 
-const initialForm = { requested_tier: 'MEDIUM', requested_model: '', requested_budget: '', reason: '' }
+const initialForm = { requested_tier: 'MEDIUM', requested_provider: 'OpenAI', requested_model: '', requested_budget: '', reason: '' }
 const statusLabels = {
   PENDING_TEAM_LEADER: 'Pending Approval',
   PENDING_COMPANY: 'Pending Approval',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
   REJECTED_BY_TEAM_LEADER: 'Rejected'
+}
+
+const modelHint = (provider, model) => {
+  const value = String(model || '').trim().toLowerCase()
+  if (!value) return 'Enter a model ID.'
+  if (provider === 'Groq' && ['groq', 'openai', 'gpt', 'llama'].includes(value)) return 'Invalid Groq model ID. Try openai/gpt-oss-120b or openai/gpt-oss-20b.'
+  if (provider === 'Gemini' && !value.startsWith('gemini-')) return 'Gemini model IDs must start with gemini-.'
+  if (provider === 'Claude' && !value.startsWith('claude-')) return 'Claude model IDs must start with claude-.'
+  if (provider === 'OpenAI' && !value.startsWith('gpt-') && !value.startsWith('o')) return 'Enter a valid OpenAI model ID, such as gpt-4o-mini.'
+  return ''
 }
 
 export default function Requests() {
@@ -34,6 +44,8 @@ export default function Requests() {
 
   const submit = event => {
     event.preventDefault()
+    const invalidModel = modelHint(form.requested_provider, form.requested_model)
+    if (invalidModel) { showToast('error', invalidModel); return }
     setSubmitting(true)
     apiKeyRequestApi.create({ ...form, requested_budget: Number(form.requested_budget) })
       .then(() => { showToast('success', 'AI API key request submitted.'); setForm(initialForm); load() })
@@ -48,8 +60,9 @@ export default function Requests() {
     <section className="panel request-form-panel">
       <form onSubmit={submit}>
         <div className="form-grid">
+          <label className="field"><span>Provider</span><select value={form.requested_provider} onChange={e => setForm({ ...form, requested_provider: e.target.value })}>{['OpenAI', 'Gemini', 'Claude', 'Groq', 'Azure OpenAI', 'OpenRouter', 'Other'].map(provider => <option key={provider}>{provider}</option>)}</select></label>
           <label className="field"><span>AI Tier</span><select value={form.requested_tier} onChange={e => setForm({ ...form, requested_tier: e.target.value })}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></label>
-          <label className="field"><span>Model Name</span><input required value={form.requested_model} onChange={e => setForm({ ...form, requested_model: e.target.value })} placeholder="GPT-5, Gemini 2.5 Pro, Claude Opus" /></label>
+          <label className="field"><span>Model Name</span><input required value={form.requested_model} onChange={e => setForm({ ...form, requested_model: e.target.value })} placeholder={form.requested_provider === 'Groq' ? 'openai/gpt-oss-120b' : 'Enter the provider model ID'} />{modelHint(form.requested_provider, form.requested_model) && <small className="tp-form-error">{modelHint(form.requested_provider, form.requested_model)}</small>}</label>
           <label className="field"><span>Requested Budget</span><input required min="1" type="number" value={form.requested_budget} onChange={e => setForm({ ...form, requested_budget: e.target.value })} placeholder="Estimated monthly usage" /><small className="muted">Estimated monthly token usage</small></label>
           <label className="field full-width"><span>Reason</span><textarea required rows="4" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} placeholder="Tell your team why this access is needed." /></label>
         </div>

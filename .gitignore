@@ -4,6 +4,10 @@
 
 .env
 .env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 # ==========================
 # Virtual Environments
@@ -11,6 +15,8 @@
 
 venv/
 .venv/
+**/venv/
+**/.venv/
 
 # ==========================
 # Python
@@ -30,6 +36,7 @@ htmlcov/
 
 logs/
 *.log
+**/logs/
 
 # ==========================
 # IDE
@@ -49,14 +56,41 @@ Thumbs.db
 # Frontend
 # ==========================
 
-frontend/node_modules/
+node_modules/
+**/node_modules/
 frontend/.next/
+Frontend/.next/
 frontend/dist/
+Frontend/dist/
 frontend/build/
+Frontend/build/
+dist/
+**/dist/
 
 # ==========================
 # Local Databases
 # ==========================
 
 *.sqlite3
+*.sqlite
 *.db
+**/.cache/
+**/uploads/
+
+# Secrets and local credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.credentials
+*credentials*.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.~lock.*
