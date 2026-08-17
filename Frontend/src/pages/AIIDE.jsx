@@ -158,6 +158,38 @@ export default function AIIDE() {
   const saveTimer = useRef();
   const active = tabs.find((tab) => tab.id === activeId);
   const [terminalSession, setTerminalSession] = useState(null);
+  const activateWorkspace = async (result, restored = false) => {
+    if (!result) return;
+    const nodes = normalize(childrenOf(result));
+    const terminal = await window.tokenpilotDesktop?.terminal.create();
+    const session = terminal?.ok
+      ? terminal
+      : {
+          ok: true,
+          sessionId: `browser-${Date.now()}`,
+          workspacePath: workspaceManager.root?.name || "Workspace",
+          currentWorkingDirectory: "",
+        };
+    setWorkspace({
+      name: workspaceManager.root?.name || "Workspace",
+      path: workspaceManager.root?.path,
+    });
+    setTree(nodes);
+    setExpanded(
+      new Set(nodes.filter((node) => node.isDirectory).map((node) => node.id)),
+    );
+    setTabs([]);
+    setActiveId();
+    setTerminalSession(session);
+    setOutput((lines) => [
+      ...lines,
+      `${restored ? "Restored" : "Opened"} ${workspaceManager.root?.name || "workspace"}`,
+      `${session.workspacePath}${session.currentWorkingDirectory ? `/${session.currentWorkingDirectory}` : ""}>`,
+    ]);
+  };
+  useEffect(() => {
+    workspaceManager.restore().then((result) => activateWorkspace(result, true)).catch(() => {});
+  }, []);
   const browserTerminal = async (command) => {
     const [verb, ...parts] = command.trim().split(/\s+/);
     const name = verb?.toLowerCase();
@@ -228,35 +260,7 @@ export default function AIIDE() {
   const openFolder = async () => {
     try {
       const result = await workspaceManager.open();
-      if (!result) return;
-      const nodes = normalize(childrenOf(result));
-      const terminal = await window.tokenpilotDesktop?.terminal.create();
-      const session = terminal?.ok
-        ? terminal
-        : {
-            ok: true,
-            sessionId: `browser-${Date.now()}`,
-            workspacePath: workspaceManager.root?.name || "Workspace",
-            currentWorkingDirectory: "",
-          };
-      setWorkspace({
-        name: workspaceManager.root?.name || "Workspace",
-        path: workspaceManager.root?.path,
-      });
-      setTree(nodes);
-      setExpanded(
-        new Set(
-          nodes.filter((node) => node.isDirectory).map((node) => node.id),
-        ),
-      );
-      setTabs([]);
-      setActiveId();
-      setTerminalSession(session);
-      setOutput((lines) => [
-        ...lines,
-        `Opened ${workspaceManager.root?.name || "workspace"}`,
-        `${session.workspacePath}${session.currentWorkingDirectory ? `/${session.currentWorkingDirectory}` : ""}>`,
-      ]);
+      await activateWorkspace(result);
     } catch (err) {
       setOutput((lines) => [...lines, err.message]);
     }

@@ -35,14 +35,30 @@ services:
       args:
         VITE_API_URL: "${VITE_API_URL:-}"
     restart: unless-stopped
-    ports: ["${PORT:-80}:80"]
+    ports:
+      - "${PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - letsencrypt_data:/etc/letsencrypt:ro
+      - acme_webroot:/var/www/certbot:ro
     depends_on:
       backend: { condition: service_healthy }
+    networks: [tokenpilot]
+
+  certbot:
+    image: certbot/certbot:v5.7.0
+    profiles: ["certificates"]
+    ports: ["80:80"]
+    volumes:
+      - letsencrypt_data:/etc/letsencrypt
+      - acme_webroot:/var/www/certbot
     networks: [tokenpilot]
 
 volumes:
   postgres_data:
   uploads_data:
   cache_data:
+  letsencrypt_data:
+  acme_webroot:
 networks:
   tokenpilot:

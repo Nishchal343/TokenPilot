@@ -77,6 +77,10 @@ dist/
 **/.cache/
 **/uploads/
 
+# Let's Encrypt state is mounted into Docker and must never be committed.
+certbot/
+letsencrypt/
+
 # Secrets and local credentials
 *.pem
 *.key
