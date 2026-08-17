@@ -141,7 +141,7 @@ Deployed on AWS and available for demonstration.
 
 ## Live Demo
 
-[TokenPilot](YOUR_DEPLOYED_URL)
+[TokenPilot](http://65.0.146.12/)
 
 
 ## License
